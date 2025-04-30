@@ -83,7 +83,7 @@ nodes:
         hostPort: 443
         protocol: TCP
   - role: worker
-    image: kindnode/crio:v1.32.2
+    image: kindnode/crio:v1.32.3
     extraMounts:
       - hostPath: ./configs/cri-o/registry.conf
         containerPath: /etc/containers/registries.conf.d/registry.conf
@@ -100,7 +100,7 @@ nodes:
         nodeRegistration:
           criSocket: unix:///var/run/crio/crio.sock
   - role: worker
-    image: kindnode/crio:v1.32.2
+    image: kindnode/crio:v1.32.3
     extraMounts:
       - hostPath: ./configs/cri-o/registry.conf
         containerPath: /etc/containers/registries.conf.d/registry.conf
