@@ -1,0 +1,59 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "vault.fullname" . }}-tls
+spec:
+  commonName: {{ include "vault.fullname" . }}
+  usages:
+    - server auth
+  dnsNames:
+    - {{ include "vault.fullname" . }}
+    - {{ include "vault.fullname" . }}.localhost
+    - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}
+    - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  ipAddresses:
+    - 127.0.0.1
+  secretName: {{ include "vault.fullname" . }}-tls
+  {{- if .Values.vault.tls.certManager.createIssuer }}
+  issuerRef:
+    name: {{ include "vault.fullname" . }}-ca-issuer
+    kind: ClusterIssuer
+  {{- else }}
+  {{- with .Values.vault.tls.certManager.issuerRef}}
+  issuerRef:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+{{- if .Values.vault.tls.certManager.secretsOperator.createCertificate }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "vault.fullname" . }}-secrets-operator-tls
+  namespace: {{ .Values.vault.tls.certManager.secretsOperator.namespace }}
+spec:
+  commonName: {{ include "vault.fullname" . }}
+  usages:
+    - server auth
+  dnsNames:
+    - {{ include "vault.fullname" . }}
+    - {{ include "vault.fullname" . }}.localhost
+    - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}
+    - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  ipAddresses:
+    - 127.0.0.1
+  secretName: {{ include "vault.fullname" . }}-secrets-operator-tls
+  {{- if .Values.vault.tls.certManager.createIssuer }}
+  issuerRef:
+    name: {{ include "vault.fullname" . }}-ca-issuer
+    kind: ClusterIssuer
+  {{- else }}
+  {{- with .Values.vault.tls.certManager.issuerRef}}
+  issuerRef:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+

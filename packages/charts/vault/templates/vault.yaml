@@ -1,0 +1,258 @@
+---
+apiVersion: vault.banzaicloud.com/v1alpha1
+kind: Vault
+metadata:
+  name: {{ include "vault.fullname" . }}
+  labels:
+    {{- include "vault.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.vault.affinity }}
+  affinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.podAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  bankVaultsImage: "{{ .Values.bankVaults.image.repository }}:{{ .Values.bankVaults.image.tag | default .Chart.AppVersion }}"
+  {{- with .Values.bankVaults.volumeMounts }}
+  bankVaultsVolumeMounts:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  caNamespaces: [] # minItems 0 of type string
+  {{- with .Values.vault.config }}
+  config:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.credentialsConfig }}
+  credentialsConfig:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.additionalEnv }}
+  envsConfig:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.vault.tls.certManager.enabled }}
+  existingTlsSecretName: {{ include "vault.fullname" . }}-tls
+  {{- end }}
+  {{- with .Values.vault.tls.existingSecret }}
+  existingTlsSecretName: {{ .Values.vault.tls.existingSecret }}
+  {{- end }}
+  {{- with .Values.vault.externalConfig }}
+  externalConfig: 
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.fluentd.enabled }}
+  {{- with .Values.fluentd.confFile }}
+  fluentdConfFile: {{ . }}
+  {{- end }}
+  {{- with .Values.fluentd.confLocation }}
+  fluentdConfLocation: {{ . }}
+  {{- end }}
+  {{- with .Values.fluentd.config }}
+  fluentdConfig: {{ . }}
+  {{- end }}
+  fluentdEnabled: true
+  fluentdImage: "{{ .Values.fluentd.image.repository }}:{{ .Values.fluentd.image.tag | default .Chart.AppVersion }}"
+  {{- end }}
+  image: "{{ .Values.vault.image.repository }}:{{ .Values.vault.image.tag | default .Chart.AppVersion }}"
+  {{- if .Values.vault.ingress.enabled }}
+  ingress:
+    {{- with .Values.vault.ingress.annotations }}
+    annotations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    spec:
+      {{- with .Values.vault.ingress.className }}
+      ingressClassName: {{ . }}
+      {{- end }}
+      rules:
+        {{- range .Values.vault.ingress.hosts }}
+        - host: {{ .host | quote }}
+          http:
+            paths:
+              {{- range .paths }}
+              - path: {{ .path }}
+                {{- with .pathType }}
+                pathType: {{ . }}
+                {{- end }}
+                backend:
+                  service:
+                    name: {{ include "vault.fullname" $ }}
+                    port:
+                      number: {{ default 8200 }}
+              {{- end }}
+        {{- end }}
+      {{- if .Values.vault.ingress.tls }}
+      tls:
+        {{- range .Values.vault.ingress.tls }}
+        - hosts:
+            {{- range .hosts }}
+            - {{ . | quote }}
+            {{- end }}
+          secretName: {{ .secretName }}
+        {{- end }}
+      {{- end }}
+  {{- end }}
+  {{ if .Values.istioEnabled }}
+  istioEnabled: true
+  {{- end }}
+
+  {{- with .Values.vault.service.loadBalancerIP }}
+  loadBalancerIP: {{ . }}
+  {{- end }}
+  {{- with .Values.vault.nodeAffinity }}
+  nodeAffinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.nodeSelector }}
+  nodeSelector: {{ . }}
+  {{- end }}
+  {{- with .Values.vault.podAntiAffinity }}
+  podAntiAffinity: {{ . }}
+  {{- end }}
+  {{- with .Values.vault.raftLeaderAddress }}
+  raftLeaderAddress: {{ . }}
+  {{- end }}
+  resources:
+    {{- with .Values.bankVaults.resources }}
+    bankVaults:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.fluentd.resources }}
+    fluentd:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.hsmDaemon.resources }}
+    hsmDaemon:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.prometheusExporter.resources }}
+    prometheusExporter:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.vault.resources }}
+    vault:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- with .Values.vault.podSecurityContext }}
+  securityContext:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  serviceAccount: {{ include "vault.serviceAccountName" . }}
+  {{- if .Values.monitoring.enabled }}
+  {{- with .Values.monitoring.serviceMonitor}}
+  serviceMonitorEnabled: {{ . }}
+  {{- end }}
+  {{- end }}
+  {{- with .Values.vault.service.ports }}
+  servicePorts:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.serviceRegistration }}
+  serviceRegistrationEnabled: {{ . }}
+  {{- end }}
+  serviceType: {{ .Values.vault.service.type }}
+  sidecarEnvsConfig:
+  {{- with .Values.vault.additionalEnv }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  size: {{ .Values.vault.size }}
+  {{- if .Values.statsd.enabled }}
+  statsdDisabled: false
+  statsdConfig: {{ .Values.statsd.config }}
+  statsdImage: {{ .Values.statsd.image }}
+  {{- else }}
+  statsdDisabled: true
+  {{- end }}
+  {{- with .Values.vault.tls.additionalHosts }}
+  tlsAdditionalHosts:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.tls.expiryThreshold }}
+  tlsExpiryThreshold: {{ . }}
+  {{- end }}
+  {{- with .Values.vault.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.unsealConfig }}
+  unsealConfig:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.annotations }}
+  vaultAnnotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.configurer.annotations }}
+  vaultConfigurerAnnotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.configurer.labels }}
+  vaultConfigurerLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.configurer.podSpec }}
+  vaultConfigurerPodSpec:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  vaultContainerSpec:
+    name: vault
+    imagePullPolicy: {{ .Values.vault.image.pullPolicy }}
+    {{- with .Values.vault.livenessProbe }}
+    livenessProbe:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.vault.readinessProbe }}
+    readinessProbe:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.vault.securityContext }}
+    securityContext:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+  {{- with .Values.vault.containers }}
+  vaultContainers:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.additionalEnv }}
+  vaultEnvsConfig:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.initContainers }}
+  vaultInitContainers:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  vaultLabels:
+    {{- include "vault.labels" . | nindent 4 }}
+  {{- with .Values.vault.podSpec }}
+  vaultPodSpec:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.velero.enabled }}
+  veleroEnabled: true
+  veleroFsfreezeImage: "{{ .Values.velero.image.repository }}:{{ .Values.velero.image.tag | default .Chart.AppVersion }}"
+  {{- end }}
+  {{- with .Values.vault.volumeClaimTemplates }}
+  volumeClaimTemplates:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.volumeMounts }}
+  volumeMounts:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.volumes }}
+  volumes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.vault.watchedSecretsAnnotations }}
+  watchedSecretsAnnotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.vault.watchedSecretsLabels }}
+  watchedSecretsLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

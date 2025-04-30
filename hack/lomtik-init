@@ -1,0 +1,52 @@
+#!/bin/sh
+set -e
+TYPE=${1:-bare}
+CLUSTERPATH=${2:-'clusters'}
+
+case "$TYPE" in
+	"dev-crio")
+		pushd ./$CLUSTERPATH/kind/configs/cri-o/
+		bash build.sh
+		popd
+		pushd ./$CLUSTERPATH/kind/
+		kind create cluster --config kind-dev-crio.yaml || true
+		popd
+		;;
+	*)
+		pushd ./$CLUSTERPATH/kind/
+		kind create cluster --config kind-"$TYPE".yaml || true
+		popd
+		;;
+esac
+
+
+case "$TYPE" in
+	dev*)
+  		# if [ ! -z $(helm list -n kube-system | grep cilium)]; then
+			helm repo add cilium https://helm.cilium.io/ --force-update
+			helm upgrade --install cilium cilium/cilium --version 1.17.2 --namespace kube-system --values clusters/kind/configs/cilium-values.yaml
+			helm upgrade --install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
+				--namespace flux-system \
+				--create-namespace \
+				--set multitenancy.enabled=true \
+				--wait
+			kubectl apply -k ./packages/apps/flux-instance
+			kubectl -n flux-system wait resourceset/zot --for=condition=Ready --timeout=20m
+			kubectl -n zot wait helmrelease/zot --for=condition=Ready --timeout=20m
+			kubectl -n zot wait deployment/zot --for=condition=Available --timeout=20m
+			bash ./hack/lomtik-push
+			kubectl -n flux-system wait fluxinstance/flux --for=condition=Ready --timeout=20m
+			# fi
+			kubectl apply -k ./packages/$CLUSTERPATH/kind-"$TYPE"
+		;;
+	*)
+			helm upgrade --install -n flux-system --create-namespace flux oci://ghcr.io/fluxcd-community/charts/flux2 --wait
+			kubectl apply -k ./packages/clusters/kind-"$TYPE"
+		;;
+esac
+
+
+
+# if [[ $KIND_LB="enable" ]]; then
+# 	docker run -d --network host -v /var/run/docker.sock:/var/run/docker.sock --name cloud-provider-kind registry.k8s.io/cloud-provider-kind/cloud-controller-manager:v0.6.0 -enable-lb-port-mapping
+# fi

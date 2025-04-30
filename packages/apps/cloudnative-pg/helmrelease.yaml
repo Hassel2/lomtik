@@ -1,0 +1,58 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cloudnative-pg
+  namespace: default
+spec:
+  dependsOn:
+    - name: cilium
+  targetNamespace: cloudnative-pg
+  storageNamespace: cloudnative-pg
+  interval: 10m
+  timeout: 5m
+  chart:
+    spec:
+      chart: cloudnative-pg
+      version: 0.23.2
+      sourceRef:
+        kind: HelmRepository
+        name: cloudnative-pg
+      interval: 5m
+  releaseName: cloudnative-pg
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  upgrade:
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  test:
+    enable: true
+  driftDetection:
+    mode: enabled
+  values:
+    monitoring:
+      podMonitorEnabled: false
+      grafanaDashboard:
+        create: true
+    image:
+      repository: ghcr.io/cloudnative-pg/cloudnative-pg
+      pullPolicy: IfNotPresent
+      tag: 1.25.1
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 10001
+      runAsGroup: 10001
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop: [ALL]
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault

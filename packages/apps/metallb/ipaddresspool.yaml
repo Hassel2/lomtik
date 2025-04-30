@@ -1,0 +1,12 @@
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default
+  namespace: metallb-system
+  labels:
+    argocd.argoproj.io/instance: metall
+spec:
+  addresses: [172.18.0.235 - 172.18.0.250]
+  autoAssign: true
+  avoidBuggyIPs: true

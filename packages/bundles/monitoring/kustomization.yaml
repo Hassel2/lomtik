@@ -1,0 +1,10 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../apps/grafana-operator
+  - ../../apps/opentelemetry-kube-stack
+  - ../../apps/victoriametrics-k8s-stack
+# patches:
+#   - path: patches.yaml
+#   - path: securitypatches.yaml

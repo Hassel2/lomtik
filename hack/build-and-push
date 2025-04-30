@@ -1,0 +1,27 @@
+#!/bin/sh
+set -euo pipefail
+TMPDIR=$(mktemp -d)
+
+buildAndPushChart() {
+for CHART_PATH in "$@"
+do
+	if [[ -f "${CHART_PATH}/Chart.yaml"  ]]; then
+		CHART_NAME=$(cat "${CHART_PATH}/Chart.yaml" | yq '.name' | xargs echo -n)
+		CHART_VERSION=$(cat "${CHART_PATH}/Chart.yaml" | yq '.version' | xargs echo -n)
+		CHART_ARCHIVE="${CHART_NAME}-${CHART_VERSION}.tgz"
+		packageChart "$CHART_PATH" "$CHART_ARCHIVE" &
+		wait
+	fi
+done
+}
+
+packageChart() {
+	CHART_PATH=$1
+	CHART_ARCHIVE=$2
+	helm package -u "$CHART_PATH" -d $TMPDIR
+	helm push "$TMPDIR/$CHART_ARCHIVE" oci://localhost:5000/charts
+	echo "DONE $CHART_PATH"
+}
+
+CHARTS=$(git diff --name-only HEAD HEAD~1 | awk -F '/' ' NF>1 {print $1 "/" $2} ' | uniq)
+buildAndPushChart "$@"

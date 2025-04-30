@@ -1,0 +1,62 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vault-unseal-0
+  namespace: vault
+spec:
+  containers:
+    - env:
+      - name: TOKENS 
+        value: HiUsnSTo7NgnYcYCeo54J8w9LTOLf4QlaYCfK5a16aIB,Syg58tvVabBwrzM0zFH2CU75+rzfhq0Zf2yJzpc/BWJd
+      - name: TLS_SKIP_VERIFY
+        value: "true"
+      - name: NODES 
+        value: http://vault-0.vault-internal:8200,http://vault-1.vault-internal:8200,http://vault-2.vault-internal:8200
+      image: ghcr.io/lrstanley/vault-unseal:0.7.0
+      imagePullPolicy: IfNotPresent
+      name: vault-unseal
+  restartPolicy: Always
+  terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vault-unseal-1
+  namespace: vault
+spec:
+  containers:
+    - env:
+      - name: TOKENS 
+        value: np/d9S+XgiZ1qK9/HOy2dyX+dte/g7DckejkAllqVL2J,Syg58tvVabBwrzM0zFH2CU75+rzfhq0Zf2yJzpc/BWJd
+      - name: TLS_SKIP_VERIFY
+        value: "true"
+      - name: NODES 
+        value: http://vault-0.vault-internal:8200,http://vault-1.vault-internal:8200,http://vault-2.vault-internal:8200
+      image: ghcr.io/lrstanley/vault-unseal:0.7.0
+      imagePullPolicy: IfNotPresent
+      name: vault-unseal
+  restartPolicy: Always
+  terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vault-unseal-2
+  namespace: vault
+spec:
+  containers:
+    - env:
+      - name: TOKENS 
+        value: np/d9S+XgiZ1qK9/HOy2dyX+dte/g7DckejkAllqVL2J,HiUsnSTo7NgnYcYCeo54J8w9LTOLf4QlaYCfK5a16aIB
+      - name: TLS_SKIP_VERIFY
+        value: "true"
+      - name: NODES 
+        value: http://vault-0.vault-internal:8200,http://vault-1.vault-internal:8200,http://vault-2.vault-internal:8200
+      image: ghcr.io/lrstanley/vault-unseal:0.7.0
+      imagePullPolicy: IfNotPresent
+      name: vault-unseal
+  restartPolicy: Always
+  terminationGracePeriodSeconds: 30

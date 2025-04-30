@@ -1,0 +1,44 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana-operator
+  namespace: grafana-operator
+spec:
+  dependsOn:
+    - name: cert-manager
+  targetNamespace: grafana-operator
+  storageNamespace: grafana-operator
+  interval: 10m
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: grafana-operator
+    namespace: default
+  releaseName: grafana-operator
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  upgrade:
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  test:
+    enable: true
+  driftDetection:
+    mode: enabled
+  values:
+    namespaceScope: false
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop: [ALL]
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault

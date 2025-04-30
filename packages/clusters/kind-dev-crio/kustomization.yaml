@@ -1,0 +1,11 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../bundles/base
+  - ../../apps/cloudnative-pg
+  - ../../apps/vault-secrets-operator
+  - ../../apps/vault-operator
+  - ../../apps/vault
+patches:
+  - path: patches.yaml

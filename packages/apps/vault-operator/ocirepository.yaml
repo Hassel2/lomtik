@@ -1,0 +1,13 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: vault-operator
+  namespace: vault-operator
+spec:
+  interval: 5m0s
+  provider: generic
+  ref:
+    tag: 1.22.5
+  timeout: 60s
+  url: oci://ghcr.io/bank-vaults/helm-charts/vault-operator

@@ -1,0 +1,96 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: opentelemetry-clickhouse1
+  namespace: default
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: clickhouse-selectel
+    namespace: default
+  dependsOn:
+    - name: clickhouse-operator
+  driftDetection:
+    mode: enabled
+  install:
+    crds: CreateReplace
+    createNamespace: true
+    remediation:
+      retries: 3
+  interval: 10m
+  releaseName: otel-clickhouse1
+  storageNamespace: opentelemetry
+  targetNamespace: opentelemetry
+  test:
+    enable: true
+  timeout: 5m
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: otel-ch1
+    clickhouse:
+      clusters:
+        - additionalUsers:
+            otel/access_management: 1
+            otel/networks/ip: 0.0.0.0/0
+            otel/password: pass
+          defaultUserPassword: pass
+          layout:
+            replicasCount: 1
+            shardsCount: 1
+          name: clickhouse1
+      defaultPodTemplate:
+        image:
+          pullPolicy: IfNotPresent
+          repository: altinity/clickhouse-server
+          tag: 24.3.12.76.altinitystable
+        podSecurityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 1
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+          readOnlyRootFilesystem: true
+          runAsGroup: 1001
+          runAsNonRoot: true
+          runAsUser: 1001
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+          - mountPath: /var/log/clickhouse-server
+            name: clickhouse-logs
+          - mountPath: /var/lib/clickhouse/tmp
+            name: clickhouse-tmp
+        volumes:
+          - name: clickhouse-logs
+            spec:
+              emptyDir: {}
+          - name: clickhouse-tmp
+            spec:
+              emptyDir: {}
+      defaultServiceTemplate:
+        annotations:
+          metallb.io/ip-allocated-from-pool: default
+          metallb.universe.tf/allow-shared-ip: opentelemetry
+          metallb.universe.tf/ip-allocated-from-pool: default
+          metallb.universe.tf/loadBalancerIPs: 172.24.48.56
+        spec:
+          type: LoadBalancer
+      defaultVolumeTemplate:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 64G
+        storageClassName: standard

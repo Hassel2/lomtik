@@ -1,0 +1,156 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: zot
+  namespace: zot
+spec:
+  releaseName: zot
+  chart:
+    spec:
+      chart: zot
+      version: 0.1.68
+      sourceRef:
+        kind: HelmRepository
+        name: zot
+  interval: 15m
+  timeout: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  upgrade:
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  values:
+    replicaCount: 1
+    image:
+      repository: ghcr.io/project-zot/zot-linux-amd64
+      pullPolicy: IfNotPresent
+      tag: "v2.1.2"
+    serviceAccount:
+      create: true
+      annotations: {}
+      name: ""
+    service:
+      type: NodePort
+      port: 5000
+      nodePort: 31234
+    mountConfig: true
+
+    configFiles:
+      config.json: |-
+        {
+          "storage": { "rootDirectory": "/var/lib/registry" },
+          "http": { "address": "0.0.0.0", "port": "5000" },
+          "log": { "level": "debug" },
+          "distSpecVersion": "1.0.1",
+          "extensions": {
+            "sync": {
+              "enable": true,
+              "registries": [
+                {
+                  "urls": ["https://k8s.gcr.io"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/k8s-ghcr"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://docker.io"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/docker"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://quay.io"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/quay"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://ghcr.io"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/ghcr"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://gcr.io"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/gcr"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://registry.k8s.io"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/k8s"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://mcr.microsoft.com"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/mcr"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://docker.elastic.co"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/elastic"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                },
+                {
+                  "urls": ["https://nvcr.io"],
+                  "content": [
+                    {
+                      "prefix": "**", 
+                      "destination": "/nvcr"
+                    }
+                  ],
+                  "onDemand": true,
+                  "tlsVerify": true
+                }
+              ]
+            }
+          }
+        }

@@ -1,0 +1,42 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: registry
+  namespace: registry
+spec:
+  interval: 10m
+  timeout: 5m
+  chart:
+    spec:
+      chart: docker-registry
+      version: 2.2.3
+      sourceRef:
+        kind: HelmRepository
+        name: twuni
+      interval: 5m
+  releaseName: registry
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  test:
+    enable: true
+  driftDetection:
+    mode: enabled
+  values:
+    ingress: 
+      enabled: true
+      className: cilium
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+        kubernetes.io/tls-acme: "false"
+      hosts:
+        - registry
+      tls:
+        - secretName: registry-ingress-tls
+          hosts:
+            - registry

@@ -1,0 +1,46 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vault-secrets-operator
+  namespace: vault-secrets-operator
+spec:
+  interval: 10m
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: vault-secrets-operator
+    namespace: vault-secrets-operator
+  releaseName: vault-secrets-operator
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  upgrade:
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  test:
+    enable: false
+  driftDetection:
+    mode: enabled
+  values:
+    defaultVaultConnection:
+      enabled: true
+      address: "https://vault.vault.svc:8200"
+      caCertSecret: "vault-secrets-operator-tls"
+    defaultAuthMethod:
+      enabled: true
+      namespace: "vault"
+      mount: kubernetes
+      kubernetes:
+        role: default
+        allowedNamespaces: ["*"]
+        method: kubernetes
+        serviceAccount: default
+      # vaultAuthGlobalRef:
+      #   name: vault-secrets-operator
+      #   enabled: true
+      #   namespace: "vault-secrets-operator"
+      #   allowDefault: true

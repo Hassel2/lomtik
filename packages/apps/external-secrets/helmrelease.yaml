@@ -1,0 +1,35 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-secrets
+  namespace: external-secrets
+spec:
+  interval: 10m
+  timeout: 5m
+  chart:
+    spec:
+      chart: external-secrets
+      version: 0.16.1
+      sourceRef:
+        kind: HelmRepository
+        name: external-secrets
+      interval: 5m
+  releaseName: external-secrets
+  install:
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  upgrade:
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  test:
+    enable: true
+  driftDetection:
+    mode: enabled
+  values:
+    installCRDs: true
+    webhook:
+      certManager:
+        enabled: true

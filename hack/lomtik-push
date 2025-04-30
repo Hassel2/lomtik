@@ -1,0 +1,4 @@
+kubectl port-forward -n zot service/zot 5000:5000 || true &
+# flux push artifact oci://localhost:5000/lomtik:latest --path=./ --source=lomtik --revision="$(git branch --show-current)@sha1:$(git rev-parse HEAD)" 
+flux push artifact oci://localhost:5000/lomtik:latest --path=./ --source=lomtik --revision="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 50; echo)" 
+flux reconcile kustomization flux-system --with-source
