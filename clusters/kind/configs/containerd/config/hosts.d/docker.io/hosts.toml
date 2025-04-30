@@ -1,0 +1,4 @@
+server = "https://docker.io"
+[host."http://localhost:31234/docker"]
+	capabilities = ["pull","resolve"]
+	override_path = true

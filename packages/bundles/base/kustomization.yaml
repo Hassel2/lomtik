@@ -1,0 +1,11 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../apps/cert-manager
+  - ../../apps/trust-manager
+  - ../../apps/cilium
+  - ../../apps/cloud-provider-kind
+  - ../../apps/flux-instance
+# patches:
+#   - path: kind-test.yaml

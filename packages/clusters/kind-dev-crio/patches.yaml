@@ -1,0 +1,11 @@
+
+---
+apiVersion: fluxcd.controlplane.io/v1
+kind: FluxInstance
+metadata:
+  name: flux
+  namespace: flux-system
+spec:
+  sync:
+    path: packages/clusters/kind-dev
+    ref: "latest"

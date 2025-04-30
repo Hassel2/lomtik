@@ -1,0 +1,17 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: OpenStackClusterTemplate
+metadata:
+  name: cluster
+  namespace: default
+spec:
+  template:
+    spec:
+      disableExternalNetwork: false
+      network:
+        filter:
+          name: kube
+      controlPlaneAvailabilityZones: [ru-3]
+      identityRef:
+        cloudName: openstack
+        name: cloud-config

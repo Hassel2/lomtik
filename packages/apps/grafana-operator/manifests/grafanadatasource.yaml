@@ -1,0 +1,27 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: otel-clickhouse
+  namespace: opentelemetry
+spec:
+  allowCrossNamespaceImport: true
+  datasource:
+    access: proxy
+    type: grafana-clickhouse-datasource
+    jsonData:
+      timeInterval: 5s
+      host: clickhouse-clickhouse.clickhouse1
+      port: 9000
+      defaultDatabase: default
+      username: default
+      tlsSkipVerify: true
+    secureJsonData:
+      password: pass
+    name: Clickhouse
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  plugins:
+    - name: grafana-clickhouse-datasource
+      version: 4.8.2

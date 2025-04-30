@@ -1,0 +1,13 @@
+version = 2
+imports = ["/etc/containerd/conf.d/*.toml"]
+[plugins]
+	[plugins."io.containerd.grpc.v1.cri"]
+		sandbox_image = "registry.k8s.io/pause:3.9"
+	[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+		runtime_type = "io.containerd.runc.v2"
+	[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+		SystemdCgroup = true
+	[plugins."io.containerd.service.v1.tasks-service"]
+		blockio_config_file="/etc/containerd/blockio.yaml"
+	[plugins."io.containerd.grpc.v1.cri".registry]
+		config_path = "/etc/containerd/hosts.d"

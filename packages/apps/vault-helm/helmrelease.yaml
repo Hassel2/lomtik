@@ -1,0 +1,273 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  interval: 10m
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: vault
+    namespace: vault
+  releaseName: vault
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  test:
+    enable: true
+  driftDetection:
+    mode: enabled
+  values:
+    global:
+      enabled: true
+      namespace: vault
+      imagePullSecrets: []
+      tlsDisable: true
+      externalVaultAddr: ''
+      openshift: false
+      psp:
+        enable: false
+        annotations: |
+          seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default,runtime/default
+          apparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default
+          seccomp.security.alpha.kubernetes.io/defaultProfileName:  runtime/default
+          apparmor.security.beta.kubernetes.io/defaultProfileName:  runtime/default
+      serverTelemetry:
+        prometheusOperator: false
+    injector:
+      enabled: 'false'
+    server:
+      enabled: 'true'
+      enterpriseLicense:
+        secretName: ''
+        secretKey: license
+      updateStrategyType: OnDelete
+      logLevel: ''
+      logFormat: ''
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 250m
+        limits:
+          memory: 1024Mi
+          cpu: 500m
+      ingress:
+        enabled: true
+        labels: {}
+        ingressClassName: cilium
+        pathType: Prefix
+        activeService: true
+        hosts:
+          - host: vault.localhost
+            paths: [/]
+        extraPaths: []
+      hostAliases: []
+      route:
+        enabled: false
+        activeService: true
+        labels: {}
+        annotations: {}
+        host: chart-example.local
+        tls:
+          termination: passthrough
+      authDelegator:
+        enabled: true
+      extraInitContainers:
+        # - name: autoinit
+        #   image: "jamiewri/vault-auto-init:0.1"
+        #   command: [sh, -c]
+        #   args:
+        #     - sh /tmp/init.sh
+      shareProcessNamespace: false
+      extraArgs: ''
+      extraPorts:
+      readinessProbe:
+        enabled: true
+        port: 8200
+        failureThreshold: 2
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 3
+      livenessProbe:
+        enabled: false
+        execCommand: []
+        path: /v1/sys/health?standbyok=true
+        port: 8200
+        failureThreshold: 2
+        initialDelaySeconds: 60
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 3
+      terminationGracePeriodSeconds: 10
+      preStopSleepSeconds: 5
+      postStart: []
+      extraEnvironmentVars: {}
+      extraSecretEnvironmentVars: []
+      extraVolumes: []
+      affinity: |
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: {{ template "vault.name" . }}
+                  app.kubernetes.io/instance: "{{ .Release.Name }}"
+                  component: server
+              topologyKey: kubernetes.io/hostname
+      networkPolicy:
+        enabled: true
+        egress: []
+        ingress:
+          - from:
+              - namespaceSelector: {}
+            ports:
+              - port: 8200
+                protocol: TCP
+              - port: 8201
+                protocol: TCP
+      priorityClassName: ''
+      extraLabels: {}
+      annotations: {}
+      includeConfigAnnotation: false
+      service:
+        enabled: true
+        active:
+          enabled: true
+          annotations: {}
+        standby:
+          enabled: true
+          annotations: {}
+        instanceSelector:
+          enabled: true
+        ipFamilyPolicy: ''
+        ipFamilies: []
+        publishNotReadyAddresses: true
+        externalTrafficPolicy: Cluster
+        port: 8200
+        targetPort: 8200
+        annotations: {}
+      dataStorage:
+        enabled: true
+        size: 10Gi
+        mountPath: /vault/data
+        storageClass:
+        accessMode: ReadWriteOnce
+        annotations: {}
+        labels: {}
+      persistentVolumeClaimRetentionPolicy: {}
+      auditStorage:
+        enabled: false
+        size: 10Gi
+        mountPath: /vault/audit
+        storageClass:
+        accessMode: ReadWriteOnce
+        annotations: {}
+        labels: {}
+      dev:
+        enabled: false
+        devRootToken: root
+      standalone:
+        enabled: 'false'
+        config: |-
+          ui = true
+          listener "tcp" {
+            tls_disable = 1
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+            # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+            # telemetry {
+            #  unauthenticated_metrics_access = "true"
+            #}
+          }
+          storage "file" {
+            path = "/vault/data"
+          }
+
+          # Example configuration for enabling Prometheus metrics in your config.
+          # telemetry {
+          #  prometheus_retention_time = "30s"
+          #  disable_hostname = true
+          #}
+      ha:
+        enabled: true
+        replicas: 3
+        apiAddr:
+        clusterAddr:
+        raft:
+          enabled: true
+          setNodeId: false
+          config: |
+            ui = true
+            listener "tcp" {
+              tls_disable = 1
+              address = "[::]:8200"
+              cluster_address = "[::]:8201"
+              # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+              # telemetry {
+              #  unauthenticated_metrics_access = "true"
+              #}
+            }
+            storage "raft" {
+              path = "/vault/data"
+              retry_join {
+                leader_api_addr = "http://vault-internal:8200"
+              }
+            }
+            service_registration "kubernetes" {}
+      serviceAccount:
+        create: true
+        name: ''
+        createSecret: true
+        annotations: {}
+        extraLabels: {}
+        serviceDiscovery:
+          enabled: true
+      statefulSet:
+        annotations: {}
+        securityContext:
+          pod:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            capabilities:
+              drop: [ALL]
+          container:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            capabilities:
+              drop: [ALL]
+      hostNetwork: false
+    ui:
+      enabled: true
+      publishNotReadyAddresses: true
+      activeVaultPodOnly: false
+      serviceType: ClusterIP
+      serviceNodePort:
+      externalPort: 8200
+      targetPort: 8200
+      serviceIPFamilyPolicy: ''
+      serviceIPFamilies: []
+      externalTrafficPolicy: Cluster
+      annotations: {}
+    csi:
+      enabled: false
+    serverTelemetry:
+      serviceMonitor:
+        enabled: false
+      prometheusRules:
+        enabled: false
