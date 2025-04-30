@@ -49,3 +49,19 @@ spec:
   destination:
     create: true
     name: static-secret3
+
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  namespace: vault
+  name: vault-oidc
+spec:
+  vaultAuthRef: vault-secrets-operator/default
+  mount: namespaces
+  type: kv-v2
+  path: vault/vault-oidc
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: vault-oidc

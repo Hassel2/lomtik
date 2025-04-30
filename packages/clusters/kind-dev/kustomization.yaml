@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ../../bundles/base
   - ../../apps/cloudnative-pg
+  - ../../apps/keycloak-stack
   - ../../apps/vault-secrets-operator
   - ../../apps/vault-operator
   - ../../apps/vault
