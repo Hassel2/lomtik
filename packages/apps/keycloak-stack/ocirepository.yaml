@@ -8,7 +8,7 @@ spec:
   interval: 5m0s
   provider: generic
   ref:
-    tag: 0.1.1
+    tag: 0.1.2
   timeout: 60s
   insecure: true
   url: oci://zot.zot:5000/charts/keycloak-stack

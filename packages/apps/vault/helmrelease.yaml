@@ -24,6 +24,12 @@ spec:
   driftDetection:
     mode: enabled
   values:
+    additionalEnv:
+      - name: OIDC_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-vault-oauth-key
+            key: key
     nameOverride: ""
     fullnameOverride: ""
     vault:
@@ -161,6 +167,16 @@ spec:
               path "shared/*" {
                 capabilities = ["create", "read", "update", "delete", "list"]
               }
+          - name: allow_admin
+            rules: |
+              path "*" {
+                capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+              }
+          - name: allow_viewer
+            rules: |
+              path "*" {
+                capabilities = ["read", "update", "list"]
+              }
         auth:
           - type: kubernetes
             roles:
@@ -170,6 +186,26 @@ spec:
                 bound_service_account_namespaces: ["*"]
                 policies: ["allow_shared_secrets", "allow_namespaced_secrets"]
                 ttl: 1h
+          - type: oidc
+            config:
+              oidc_discovery_url: "http://keycloak.localhost/realms/realm01"
+              oidc_client_id: vault-oauth
+              oidc_client_secret: "${ env `OIDC_CLIENT_SECRET` }"
+              default_role: default
+            roles:
+              # Allow every pod in the default namespace to use the secret kv store
+              - name: default
+                allowed_redirect_uris: ["https://vault.localhost/ui/vault/auth/oidc/oidc/callback","https://vault.localhost/oidc/callback","https://vault.localhost:/oidc/callback","https://vault.localhost:443/oidc/callback","http://localhost:8250/oidc/callback"]
+                bound_audiences: vault-oauth
+                user_claim: preferred_username
+                groups_claim: "groups"
+              - name: admin
+                allowed_redirect_uris: ["https://vault.localhost/ui/vault/auth/oidc/oidc/callback","https://vault.localhost/oidc/callback","https://vault.localhost:/oidc/callback","https://vault.localhost:443/oidc/callback","http://localhost:8250/oidc/callback"]
+                bound_audiences: vault-oauth
+                user_claim: preferred_username
+                bound_claims:
+                  groups: 
+                    - admin
         secrets:
           - path: namespaces
             type: kv

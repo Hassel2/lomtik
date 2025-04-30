@@ -7,5 +7,5 @@ metadata:
   namespace: flux-system
 spec:
   sync:
-    path: packages/clusters/kind-dev-crio
+    path: packages/clusters/kind-dev
     ref: "latest"
