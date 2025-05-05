@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitlab
+---
+apiVersion: apps.gitlab.com/v1beta1
+kind: GitLab
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  chart:
+    version: "8.11.1" # https://gitlab.com/gitlab-org/cloud-native/gitlab-operator/-/blob/<OPERATOR_VERSION>/CHART_VERSIONS
+    values:
+      global:
+        hosts:
+          domain: gitlab.localhost # use a real domain here
+        ingress:
+          configureCertmanager: true
+      certmanager-issuer:
+        email: youremail@example.com # use your real email address here
