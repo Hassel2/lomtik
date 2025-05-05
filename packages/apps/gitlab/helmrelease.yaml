@@ -1,0 +1,105 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  interval: 1m
+  timeout: 10m
+  chart:
+    spec:
+      chart: gitlab
+      version: 8.11.1
+      sourceRef:
+        kind: HelmRepository
+        name: gitlab
+      interval: 5m
+  releaseName: gitlab
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  upgrade:
+    remediation:
+      retries: 3
+    crds: CreateReplace
+  test:
+    enable: false
+  driftDetection:
+    mode: enabled
+  values:
+    global:
+      hosts:
+        domain: localhost
+        gitlab:
+          hostnameOverride: gitlab.localhost
+      ingress:
+        enabled: true
+        configureCertmanager: false
+        provider: cilium
+        class: cilium
+      kas:
+        enabled: false
+      minio:
+        enabled: false
+      registry:
+        enabled: false
+      appConfig:
+        object_store:
+          enabled: false
+        lfs:
+          enabled: false
+        packages:
+          enabled: false
+        uploads:
+          enabled: false
+        artifacts:
+          enabled: false
+    certmanager:
+      installCRDs: false
+      nameOverride: certmanager
+      install: false
+      rbac:
+        create: false
+    nginx-ingress:
+      enabled: false
+    certmanager-issuer:
+      email: email@example.com
+    gitlab-runner:
+      install: true
+      volumes:
+        - name: gitlab-wildcard-tls-ca
+          secret:
+            defaultMode: 420
+            secretName: gitlab-wildcard-tls-ca
+      volumeMounts:
+        - mountPath: /etc/ssl/certs/gitlab-ca.pem
+          name: gitlab-wildcard-tls-ca
+          subPath: cfssl_ca
+      hostAliases:
+      - ip: "172.18.0.8"
+        hostnames:
+        - "gitlab.localhost"
+      - ip: "172.18.0.7"
+        hostnames:
+        - "gitlab.localhost"
+      - ip: "172.18.0.6"
+        hostnames:
+        - "gitlab.localhost"
+      - ip: "172.18.0.5"
+        hostnames:
+        - "gitlab.localhost"
+        
+    prometheus:
+      install: false
+    redis:
+      install: true
+    gitlab:
+      toolbox:
+        enabled: false
+      gitlab-shell:
+        enabled: false
+    registry:
+      enabled: false
