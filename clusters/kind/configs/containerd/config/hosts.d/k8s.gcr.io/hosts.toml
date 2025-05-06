@@ -1,0 +1,4 @@
+server = "https://k8s.gcr.io"
+[host."http://localhost:31234/k8s-gcr"]
+	capabilities = ["pull","resolve"]
+	override_path = true

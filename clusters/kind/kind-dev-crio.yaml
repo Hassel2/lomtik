@@ -1,0 +1,120 @@
+---
+kind: Cluster
+name: kind-dev-crio
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    image: kindnode/crio:v1.32.3
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        etcd:
+          local:
+            extraArgs:
+              listen-metrics-urls: http://0.0.0.0:2381
+        controllerManager:
+          extraArgs:
+            bind-address: "0.0.0.0"
+        scheduler:
+          extraArgs:
+            bind-address: "0.0.0.0"
+        apiServer:
+            extraVolumes:
+              - name: audit-policies
+                hostPath: /etc/kubernetes/policies
+                mountPath: /etc/kubernetes/policies
+                readOnly: true
+                pathType: "DirectoryOrCreate"
+              - name: "audit-logs"
+                hostPath: "/var/log/kubernetes"
+                mountPath: "/var/log/kubernetes"
+                readOnly: false
+                pathType: DirectoryOrCreate
+            extraArgs:
+              enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook    
+              audit-log-path: /var/log/kubernetes/kube-apiserver-audit.log
+              audit-policy-file: /etc/kubernetes/policies/audit-policy.yaml
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+        skipPhases:
+          - addon/kube-proxy
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+        skipPhases:
+          - addon/kube-proxy
+    extraMounts:
+      - hostPath: ./configs/cri-o/registry.conf
+        containerPath: /etc/containers/registries.conf.d/crio.conf
+        readOnly: true
+      - hostPath: ./configs/audit/audit-policy.yaml
+        containerPath: /etc/kubernetes/policies/audit-policy.yaml
+        readOnly: true
+      - hostPath: ./configs/admission/admission.yaml
+        containerPath: /etc/kubernetes/admission/admission.yaml
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+  - role: worker
+    image: kindnode/crio:v1.32.3
+    extraMounts:
+      - hostPath: ./configs/cri-o/registry.conf
+        containerPath: /etc/containers/registries.conf.d/registry.conf
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 30001
+        hostPort: 443
+        protocol: TCP
+  - role: worker
+    image: kindnode/crio:v1.32.3
+    extraMounts:
+      - hostPath: ./configs/cri-o/registry.conf
+        containerPath: /etc/containers/registries.conf.d/registry.conf
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+  - role: worker
+    image: kindnode/crio:v1.32.3
+    extraMounts:
+      - hostPath: ./configs/cri-o/registry.conf
+        containerPath: /etc/containers/registries.conf.d/registry.conf
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
+networking:
+  disableDefaultCNI: true

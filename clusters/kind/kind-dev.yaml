@@ -1,0 +1,78 @@
+---
+kind: Cluster
+name: kind-dev
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.32.3
+    kubeadmConfigPatches:
+      - |
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+            extraVolumes:
+              - name: admission
+                hostPath: /etc/kubernetes/admission
+                mountPath: /etc/kubernetes/admission
+                readOnly: true
+              - name: audit-policies
+                hostPath: /etc/kubernetes/policies
+                mountPath: /etc/kubernetes/policies
+                readOnly: true
+                pathType: "DirectoryOrCreate"
+              - name: "audit-logs"
+                hostPath: "/var/log/kubernetes"
+                mountPath: "/var/log/kubernetes"
+                readOnly: false
+                pathType: DirectoryOrCreate
+            extraArgs:
+              admission-control-config-file: /etc/kubernetes/admission/admission.yaml
+              enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook    
+              audit-log-path: /var/log/kubernetes/kube-apiserver-audit.log
+              audit-policy-file: /etc/kubernetes/policies/audit-policy.yaml
+    extraMounts:
+      - hostPath: ./configs/containerd/config
+        containerPath: /etc/containerd
+        readOnly: true
+      - hostPath: ./configs/audit/audit-policy.yaml
+        containerPath: /etc/kubernetes/policies/audit-policy.yaml
+        readOnly: true
+      - hostPath: ./configs/admission/admission.yaml
+        containerPath: /etc/kubernetes/admission/admission.yaml
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+  - role: worker
+    image: kindest/node:v1.32.3
+    extraMounts:
+      - hostPath: ./configs/containerd/config
+        containerPath: /etc/containerd
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 30001
+        hostPort: 443
+        protocol: TCP
+  - role: worker
+    image: kindest/node:v1.32.3
+    extraMounts:
+      - hostPath: ./configs/containerd/config
+        containerPath: /etc/containerd
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+  - role: worker
+    image: kindest/node:v1.32.3
+    extraMounts:
+      - hostPath: ./configs/containerd/config
+        containerPath: /etc/containerd
+        readOnly: true
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+networking:
+  disableDefaultCNI: true
+containerdConfigPatches:

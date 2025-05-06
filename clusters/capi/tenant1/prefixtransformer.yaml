@@ -1,0 +1,15 @@
+---
+apiVersion: builtin
+kind: PrefixSuffixTransformer
+prefix: tenant1-
+metadata:
+  name: prefixtransformer
+fieldSpecs:
+  - path: metadata/name
+  - path: spec/controlPlane/machineInfrastructure/ref/name
+  - path: spec/controlPlane/ref/name
+  - path: spec/topology/class
+  - path: spec/chart/spec/sourceRef/name
+  - path: spec/infrastructure/ref/name
+  - path: spec/workers/machineDeployments/template/bootstrap/ref/name
+  - path: spec/workers/machineDeployments/template/infrastructure/ref/name

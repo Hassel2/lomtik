@@ -1,0 +1,4 @@
+server = "https://registry.k8s.io"
+[host."http://localhost:31234/k8s"]
+	capabilities = ["pull","resolve"]
+	override_path = true

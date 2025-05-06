@@ -1,0 +1,19 @@
+---
+apiVersion: builtin
+kind: PrefixSuffixTransformer
+prefix: tenant2-
+metadata:
+  name: prefixtransformer
+fieldSpecs:
+  - path: metadata/name
+  - path: spec/template/spec/identityRef/name
+  - path: spec/controlPlane/machineInfrastructure/ref/name
+  - path: spec/controlPlane/ref/name
+  - path: spec/topology/class
+  - path: spec/resources/name
+  - path: spec/chart/spec/sourceRef/name
+  - path: metadata/labels/cluster.x-k8s.io/cluster-name
+  - path: spec/clusterSelector/matchLabels/cluster.x-k8s.io/cluster-name
+  - path: spec/infrastructure/ref/name
+  - path: spec/workers/machineDeployments/template/bootstrap/ref/name
+  - path: spec/workers/machineDeployments/template/infrastructure/ref/name

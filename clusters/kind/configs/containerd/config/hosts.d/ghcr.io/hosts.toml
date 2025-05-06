@@ -1,0 +1,4 @@
+server = "https://ghcr.io"
+[host."http://localhost:31234/ghcr"]
+	capabilities = ["pull","resolve"]
+	override_path = true
