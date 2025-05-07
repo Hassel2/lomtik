@@ -1,13 +1,3 @@
-  # vault write auth/oidc/config \
-  #     oidc_discovery_url="https://<Keycloak_domain>/auth/realms/<realm_name>" \
-  #     oidc_client_id="<client_id>" \
-  #     oidc_client_secret="<client_secret>" \
-  #     default_role="your-default-role"
-    #
-#vault write -tls-skip-verify auth/oidc/role/admin user_claim="preferred_userna
-# me" allowed_redirect_uris="https://vault.localhost/ui/vault/auth/oidc/oidc/callbac
-# k" allowed_redirect_uris="https://vault.localhost/oidc/callback" policies="kuberne
-# tes-read"
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -76,13 +66,13 @@ spec:
         annotations:
           ingress.cilium.io/tls-passthrough: enabled 
         hosts:
-          - host: vault.localhost
+          - host: vault.kind
             paths:
               - path: /
                 pathType: Prefix
         tls:
         - hosts:
-          - vault.localhost
+          - vault.kind
           secretName: vault-tls
       resources:
         limits:
