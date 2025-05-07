@@ -12,6 +12,13 @@ spec:
           - name: realm01
             realmName: realm01
         realmGroups:
+          - name: admin
+            realmName: realm01
+            additionalSpec:
+              clientRoles:
+                - clientId: vault-oauth
+                  roles:
+                    - admin
           - name: realm01
             realmName: realm01
             additionalSpec:

@@ -27,6 +27,18 @@ spec:
         - ip: "172.18.0.5"
           hostnames:
           - "keycloak.localhost"
+        - ip: "172.18.0.8"
+          hostnames:
+          - "gitlab.kind"
+        - ip: "172.18.0.7"
+          hostnames:
+          - "gitlab.kind"
+        - ip: "172.18.0.6"
+          hostnames:
+          - "gitlab.kind"
+        - ip: "172.18.0.5"
+          hostnames:
+          - "gitlab.kind"
       externalConfig:
         policies:
           - name: allow_namespaced_secrets
@@ -58,15 +70,20 @@ spec:
           - type: jwt
             path: jwt
             config:
-              oidc_discovery_url: https://myco.auth0.com/
+              oidc_discovery_url: https://gitlab.kind
+              bound_issuer: https://gitlab.kind
             roles:
             - name: default
               bound_audiences:
-                - https://vault.plugin.auth.jwt.test
-              user_claim: https://vault/user
-              groups_claim: https://vault/groups
-              policies: allow_secrets
-              ttl: 1h
+                - https://vault.kind
+              user_claim: user_email
+              policies: allow_shared_secrets
+              token_explicit_max_ttl: 60
+              bound_claims_type: "glob"
+              bound_claims: {
+                "project_id": "*",
+                "ref": "*"
+              }
             
           - type: kubernetes
             roles:
@@ -85,12 +102,12 @@ spec:
             roles:
               # Allow every pod in the default namespace to use the secret kv store
               - name: default
-                allowed_redirect_uris: ["https://vault.localhost/ui/vault/auth/oidc/oidc/callback","https://vault.localhost/oidc/callback","https://vault.localhost:/oidc/callback","https://vault.localhost:443/oidc/callback","http://localhost:8250/oidc/callback"]
+                allowed_redirect_uris: ["https://vault.kind/ui/vault/auth/oidc/oidc/callback","https://vault.kind/oidc/callback","https://vault.kind:/oidc/callback","https://vault.kind:443/oidc/callback","http://localhost:8250/oidc/callback"]
                 bound_audiences: vault-oauth
                 user_claim: preferred_username
                 groups_claim: "groups"
               - name: admin
-                allowed_redirect_uris: ["https://vault.localhost/ui/vault/auth/oidc/oidc/callback","https://vault.localhost/oidc/callback","https://vault.localhost:/oidc/callback","https://vault.localhost:443/oidc/callback","http://localhost:8250/oidc/callback"]
+                allowed_redirect_uris: ["https://vault.kind/ui/vault/auth/oidc/oidc/callback","https://vault.kind/oidc/callback","https://vault.kind:/oidc/callback","https://vault.kind:443/oidc/callback","http://localhost:8250/oidc/callback"]
                 bound_audiences: vault-oauth
                 user_claim: preferred_username
                 policies: allow_admin
