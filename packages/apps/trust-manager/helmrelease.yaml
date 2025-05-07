@@ -5,8 +5,8 @@ metadata:
   name: trust-manager
   namespace: trust-manager
 spec:
-  interval: 10m
-  timeout: 5m
+  interval: 1m
+  timeout: 10m
   chart:
     spec:
       chart: trust-manager
@@ -18,7 +18,7 @@ spec:
   releaseName: trust-manager
   install:
     remediation:
-      retries: 3
+      retries: 10
     crds: CreateReplace
   upgrade:
     remediation:

@@ -1,0 +1,18 @@
+{{- if .Values.keycloak.enabled }}
+{{- $fullName := .Values.keycloak.name | default (include "keycloak-operator.fullname" .) -}}
+{{ range .Values.keycloak.realmGroups }}
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmGroup
+metadata:
+  name: {{ $fullName }}-{{ .name }}
+spec:
+  name: {{ .name }}
+  realmRef:
+    name: {{ .realmName }}
+    kind: KeycloakRealm
+  {{ if .additionalSpec }}
+  {{- toYaml .additionalSpec | nindent 2 }}
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -4,21 +4,15 @@
 Dependencies: docker, kind
 
 ## How to bootstrap
-```
-
-make bootstrap type=dev
-```
+make bootstrap
 
 ## How to delete
-```
-
 make delete
-```
 
 ## Use cri-o cri
 
 ```bash 
-make bootstrap type=dev-crio
+make bootstrap type=crio
 ```
 
 ## Ingress, loadbalancer?

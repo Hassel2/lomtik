@@ -1,0 +1,29 @@
+keycloak:
+  enabled: true
+  name: keycloak
+  features:
+    enabled:
+      - account3
+      - admin2
+      - web-authn
+    disabled:
+      - js-adapter
+      - kerberos
+  http:
+    httpEnabled: true
+  hostname:
+    hostname: keycloak.example.com
+    strict: true
+    backchannelDynamic: false
+  realmimport:
+    enabled: true
+    realms:
+      - id: test
+        realm: test
+        keycloakCRName: keycloak
+        users:
+          - id: '0'
+            firstName: Hans
+            lastName: Wurst
+            username: "john.sausage"
+            email: john.sausage@example.com

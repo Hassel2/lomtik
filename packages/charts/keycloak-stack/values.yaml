@@ -1,0 +1,208 @@
+keycloak-configure:
+  keycloak:
+    name: keycloak01
+    hostname:
+      hostname: keycloak01-service:8080
+      schema: http
+    enabled: true
+    realms:
+      - name: realm01
+        realmName: realm01
+    realmGroups:
+      - name: realm01
+        realmName: realm01
+        additionalSpec:
+          clientRoles:
+            - clientId: realm-management
+              roles:
+                - realm-admin
+    realmRoles:
+      - name: viewer
+        realmName: realm01
+        description: viewer
+      - name: admin
+        realmName: realm01
+        description: admin
+    clients:
+      - name: kubernetes-oauth
+        genSecret: true
+        realmName: realm01
+        # copySecretNamespaces:
+        #   - dex
+        clientId: kubernetes-oauth
+        additionalSpec:
+          protocol: openid-connect
+          directAccess: true
+          public: false
+          redirectUris:
+            - https://*
+            - http://*
+          webOrigins:
+            - https://*
+            - http://*
+          implicitFlowEnabled: false
+          directAccess: true
+          standardFlowEnabled: true
+          fullScopeAllowed: true
+          clientRoles:
+            - admin
+            - viewer
+          defaultClientScopes:
+            - email
+            - offline_access
+            - profile
+            - roles
+          protocolMappers:
+            - name: client groups
+              protocol: openid-connect
+              protocolMapper: oidc-group-membership-mapper
+              config:
+                access.token.claim: "true"
+                multivalued: "true"
+                claim.name: groups
+                full.path: "false"
+                id.token.claim: "true"
+                userinfo.token.claim: "true"
+            - name: client roles
+              protocol: openid-connect
+              protocolMapper: oidc-usermodel-client-role-mapper
+              config:
+                access.token.claim: "true"
+                usermodel.clientRoleMapping.clientId: "kuberneres-oauth"
+                multivalued: "true"
+                claim.name: roles
+                full.path: "false"
+                id.token.claim: "true"
+                userinfo.token.claim: "true"
+keycloak-operator:
+  keycloak:
+    enabled: true
+    genPass: true
+    name: keycloak01
+    hostname:
+      backchannelDynamic: false
+      # hostname: keycloak01.example.com
+      hostname: keycloak.localhost
+      strict: false
+    proxy:
+      headers: xforwarded
+    db:
+      create: true
+      database: keycloak01-pgdb01-cluster
+      host: keycloak01-pgdb01-cluster-rw
+      port: 5432
+      passwordSecret:
+        name: keycloak01-pgdb01-cluster-app
+        key: password
+      usernameSecret:
+        name: keycloak01-pgdb01-cluster-app
+        key: username
+      vendor: postgres
+    ingress:
+      enabled: true
+      external:
+        enabled: false
+        # annotations:
+        #   cert-manager.io/cluster-issuer: internalca.v1
+        #   kubernetes.io/tls-acme: "false"
+        # className: "cilium"
+        # hosts:
+        #   - host: kind
+        # tls:
+        #   - hosts:
+        #       - keycloak01.example.com
+        #     secretName: keycloak01.example.com
+    unsupported:
+      podTemplate:
+        spec:
+          containers:
+            - name: keycloak
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                privileged: false
+                readOnlyRootFilesystem: false
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
+          securityContext:
+            fsGroup: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+  operator:
+    enabled: true
+    replicaCount: 1
+    image:
+      pullPolicy: IfNotPresent
+      tag: "25.0.2"
+    config:
+      keycloakImage:
+        tag: "25.0.2"
+    serviceAccount:
+      create: true
+    podSecurityContext:
+      fsGroup: 2000
+    securityContext:
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: false
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+      runAsNonRoot: true
+      runAsUser: 1000
+    service:
+      enabled: true
+      type: ClusterIP
+      port: 8080
+keycloak-operator-configurator:
+  clusterReconciliationEnabled: false
+  name: keycloak-operator-configurator
+cluster:
+  fullnameOverride: keycloak01-pgdb01-cluster
+  mode: standalone
+  cluster:
+    monitoring:
+      enabled: true
+      podMonitor:
+        enabled: true
+      prometheusRule:
+        enabled: false
+    affinity:
+      enablePodAntiAffinity: true
+      podAntiAffinityType: preferred
+      topologyKey: kubernetes.io/hostname
+    initdb:
+      database: keycloak01-pgdb01-cluster
+      encoding: UTF8
+      localeCType: en_US.UTF8
+      localeCollate: en_US.UTF8
+      owner: keycloak01-pgdb01-cluster-user
+    instances: 1
+    primaryUpdateMethod: switchover
+    primaryUpdateStrategy: unsupervised
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2048Mi
+      requests:
+        cpu: 200m
+        memory: 1024Mi
+    storage:
+      resizeInUseVolumes: true
+      size: 25Gi
+      storageClass: ""
+    enableSuperuserAccess: false
+  backups:
+    enabled: false
+    endpointCA:
+      create: false

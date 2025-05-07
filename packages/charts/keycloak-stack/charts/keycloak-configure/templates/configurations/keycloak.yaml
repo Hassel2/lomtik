@@ -1,0 +1,10 @@
+{{- if .Values.keycloak.enabled }}
+{{- $fullName := .Values.keycloak.name | default (include "keycloak-operator.fullname" .) -}}
+apiVersion: v1.edp.epam.com/v1
+kind: Keycloak
+metadata:
+  name: {{ $fullName }}
+spec:
+  secret: {{ $fullName }}-initial-admin
+  url: {{ .Values.keycloak.hostname.schema | default "https" }}://{{ .Values.keycloak.hostname.hostname }}
+{{- end }}

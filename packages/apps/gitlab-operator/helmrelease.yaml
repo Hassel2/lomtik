@@ -30,3 +30,4 @@ spec:
   driftDetection:
     mode: enabled
   values:
+    watchCluster: true

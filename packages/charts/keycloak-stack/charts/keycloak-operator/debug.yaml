@@ -1,0 +1,1193 @@
+Release "keycloak01-stack" has been upgraded. Happy Helming!
+NAME: keycloak01-stack
+LAST DEPLOYED: Mon Aug 26 18:49:03 2024
+NAMESPACE: keycloak
+STATUS: pending-upgrade
+REVISION: 8
+HOOKS:
+---
+# Source: keycloak-operator/charts/cluster/templates/tests/ping.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak01-pgdb01-cluster-ping-test
+  labels:
+    app.kubernetes.io/component: database-ping-test
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      name: keycloak01-pgdb01-cluster-ping-test
+      labels:
+        app.kubernetes.io/component: database-ping-test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: alpine
+          image: alpine:3.17
+          command: [ 'sh' ]
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak01-pgdb01-cluster-app
+                  key: username
+            - name: PGPASS
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak01-pgdb01-cluster-app
+                  key: password
+          args:
+            - "-c"
+            - >-
+              apk add postgresql-client &&
+              psql "postgresql://$PGUSER:$PGPASS@keycloak01-pgdb01-cluster-rw.keycloak.svc.cluster.local:5432" -c 'SELECT 1'
+MANIFEST:
+---
+# Source: keycloak-operator/charts/keycloak-operator-configurator/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: edp-keycloak-operator-configurator
+  labels:
+    helm.sh/chart: keycloak-operator-configurator-1.22.1
+    app.kubernetes.io/version: "1.22.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: keycloak-operator/templates/operator/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keycloak01-stack-keycloak-operator
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakclient.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak01-grafana-oauth-key
+data:
+  key: aThWUWkzb0t1N3Y4YW1mSzVmYXY=
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakclient.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak01-grafana-oauth-key
+  namespace: monitoring
+data:
+  key: aThWUWkzb0t1N3Y4YW1mSzVmYXY=
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakclient.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak01-grafana-oauth-key
+  namespace: monitoring-public
+data:
+  key: aThWUWkzb0t1N3Y4YW1mSzVmYXY=
+---
+# Source: keycloak-operator/templates/keycloak/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak01-initial-admin
+data:
+  username: YWRtaW4=
+  password: SnZsMnZZcE9Cd1RLMXR2QkFJQ0I=
+---
+# Source: keycloak-operator/templates/operator/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloakcontroller-cluster-role
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+rules:
+  - apiGroups:
+      - k8s.keycloak.org
+    resources:
+      - keycloaks
+      - keycloaks/status
+      - keycloaks/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - patch
+      - update
+---
+# Source: keycloak-operator/templates/operator/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloakrealmimportcontroller-cluster-role
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+rules:
+  - apiGroups:
+      - k8s.keycloak.org
+    resources:
+      - keycloakrealmimports
+      - keycloakrealmimports/status
+      - keycloakrealmimports/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - patch
+      - update
+---
+# Source: keycloak-operator/charts/keycloak-operator-configurator/templates/leader_election_role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: edp-keycloak-operator-configurator-leader-election-role
+  labels:
+    helm.sh/chart: keycloak-operator-configurator-1.22.1
+    app.kubernetes.io/version: "1.22.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+---
+# Source: keycloak-operator/charts/keycloak-operator-configurator/templates/operator_role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: edp-keycloak-operator-configurator-role
+  labels:
+    helm.sh/chart: keycloak-operator-configurator-1.22.1
+    app.kubernetes.io/version: "1.22.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakauthflows
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakauthflows/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakauthflows/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakclients
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakclients/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakclients/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakclientscopes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakclientscopes/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakclientscopes/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmcomponents
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmcomponents/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmcomponents/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmgroups
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmgroups/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmgroups/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmidentityproviders
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmidentityproviders/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmidentityproviders/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmrolebatches
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmrolebatches/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmrolebatches/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmroles
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmroles/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmroles/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealms
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealms/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealms/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmusers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmusers/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloakrealmusers/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloaks
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloaks/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - v1.edp.epam.com
+    resources:
+      - keycloaks/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+# Source: keycloak-operator/templates/operator/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  # TODO: figure out how to replace rolename with keycloak01-stack-keycloak-operator-operator
+  name: keycloak-operator-role
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+rules:
+  - apiGroups:
+      - apps
+      - extensions
+    resources:
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - patch
+      - update
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - patch
+      - update
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - patch
+      - update
+---
+# Source: keycloak-operator/charts/keycloak-operator-configurator/templates/leader_election_rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: edp-keycloak-operator-configurator-leader-election-rolebinding
+  labels:
+    helm.sh/chart: keycloak-operator-configurator-1.22.1
+    app.kubernetes.io/version: "1.22.0"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: edp-keycloak-operator-configurator-leader-election-role
+subjects:
+  - kind: ServiceAccount
+    name: edp-keycloak-operator-configurator
+---
+# Source: keycloak-operator/charts/keycloak-operator-configurator/templates/operator_rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: edp-keycloak-operator-configurator-rolebinding
+  labels:
+    helm.sh/chart: keycloak-operator-configurator-1.22.1
+    app.kubernetes.io/version: "1.22.0"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: edp-keycloak-operator-configurator-role
+subjects:
+  - kind: ServiceAccount
+    name: edp-keycloak-operator-configurator
+---
+# Source: keycloak-operator/templates/operator/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-operator-role-binding
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: keycloak-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: keycloak01-stack-keycloak-operator
+---
+# Source: keycloak-operator/templates/operator/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-operator-view
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: keycloak01-stack-keycloak-operator
+---
+# Source: keycloak-operator/templates/operator/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloakcontroller-role-binding
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: keycloakcontroller-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: keycloak01-stack-keycloak-operator
+---
+# Source: keycloak-operator/templates/operator/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloakrealmimportcontroller-role-binding
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: keycloakrealmimportcontroller-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: keycloak01-stack-keycloak-operator
+---
+# Source: keycloak-operator/templates/operator/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name:  keycloak01-stack-keycloak-operator-operator
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+---
+# Source: keycloak-operator/charts/keycloak-operator-configurator/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    helm.sh/chart: keycloak-operator-configurator-1.22.1
+    app.kubernetes.io/version: "1.22.0"
+    app.kubernetes.io/managed-by: Helm
+  name: keycloak-operator-configurator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: keycloak-operator-configurator
+  template:
+    metadata:
+      labels:
+        name: keycloak-operator-configurator
+    spec:
+      serviceAccountName: edp-keycloak-operator-configurator
+      securityContext:
+        fsGroup: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: keycloak-operator-configurator
+          # Replace this with the built image name
+          image: epamedp/keycloak-operator:1.22.0
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - /manager
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - mountPath: /etc/ssl/certs/ca.bundle.pem
+              name: ca-bundle-pem
+              subPath: ca.bundle.pem
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: 192Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+      volumes:
+        - name: ca-bundle-pem
+          secret:
+            defaultMode: 420
+            secretName: ca.bundle.pem
+---
+# Source: keycloak-operator/templates/operator/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak01-stack-keycloak-operator-operator
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/component: keycloak-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak-operator
+      app.kubernetes.io/instance: keycloak01-stack
+      app.kubernetes.io/component: keycloak-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak-operator
+        app.kubernetes.io/instance: keycloak01-stack
+        app.kubernetes.io/component: keycloak-operator
+    spec:
+      serviceAccountName: keycloak01-stack-keycloak-operator
+      securityContext:
+        fsGroup: 2000
+      containers:
+        - name: keycloak-operator-operator
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          image: "quay.io/keycloak/keycloak-operator:25.0.2"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KC_OPERATOR_KEYCLOAK_IMAGE
+              value: "quay.io/keycloak/keycloak:25.0.2"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /q/health/live
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 10
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /q/health/ready
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 10
+          resources:
+            {}
+---
+# Source: keycloak-operator/templates/keycloak/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak01
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    cert-manager.io/cluster-issuer: internalca.v1
+    kubernetes.io/tls-acme: "false"
+spec:
+  ingressClassName: cilium
+  tls:
+    - hosts:
+        - "keycloak.services.msk1.infra01.stage.cloud.reg.ru"
+      secretName: keycloak.services.msk1.infra01.stage.cloud.reg.ru
+  rules:
+    - host: keycloak.services.msk1.infra01.stage.cloud.reg.ru
+      http:
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+            backend:
+              service:
+                name: keycloak01-service
+                port:
+                  number: 8080
+---
+# Source: keycloak-operator/charts/cluster/templates/cluster.yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: keycloak01-pgdb01-cluster
+  labels:
+    helm.sh/chart: cluster-0.0.9
+    app.kubernetes.io/name: cluster
+    app.kubernetes.io/instance: keycloak01-stack
+    app.kubernetes.io/part-of: cloudnative-pg
+    app.kubernetes.io/managed-by: Helm
+spec:
+  instances: 1
+  imageName: harbor.hosting.reg.ru/cnpg/postgres-cnpg:16.2-202403151729
+  imagePullPolicy: IfNotPresent
+  postgresUID: 26
+  postgresGID: 26
+  storage:
+    size: 25Gi
+    storageClass: openebs-hostpath
+  resources:
+    limits:
+      cpu: "2"
+      memory: 2048Mi
+    requests:
+      cpu: 200m
+      memory: 1024Mi
+  
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: preferred
+    topologyKey: kubernetes.io/hostname
+  priorityClassName: 
+
+  primaryUpdateMethod: switchover
+  primaryUpdateStrategy: unsupervised
+  logLevel: info
+  enableSuperuserAccess: false
+  postgresql:
+    shared_preload_libraries:
+    parameters:
+      effective_cache_size: 1536MB
+      max_connections: "100"
+      max_wal_size: 1024MB
+      min_wal_size: 64MB
+      random_page_cost: "1.1"
+      shared_buffers: 512MB
+      work_mem: 2MB
+    
+
+  managed:
+
+  monitoring:
+    enablePodMonitor: false
+  
+  
+  bootstrap:
+    initdb:
+      database: keycloak01-pgdb01-cluster
+      encoding: UTF8
+      localeCType: en_US.UTF8
+      localeCollate: en_US.UTF8
+      owner: keycloak01-pgdb01-cluster-user
+      postInitApplicationSQL:
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloak.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: Keycloak
+metadata:
+  name: keycloak01
+spec:
+  secret: keycloak01-initial-admin
+  url: https://keycloak.services.msk1.infra01.stage.cloud.reg.ru
+---
+# Source: keycloak-operator/templates/keycloak/keycloak.yaml
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak01
+  labels:
+    helm.sh/chart: keycloak-operator-1.3.4
+    app.kubernetes.io/version: "25.0.2"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: keycloak
+spec:
+  db:
+    database: "keycloak01-pgdb01-cluster"
+    host: "keycloak01-pgdb01-cluster-pooler-rw.keycloak.svc.cluster.local"
+    passwordSecret: 
+      key: password
+      name: keycloak01-pgdb01-cluster-app
+    port: 5432
+    usernameSecret: 
+      key: username
+      name: keycloak01-pgdb01-cluster-app
+    vendor: "postgres"
+  hostname:
+    backchannelDynamic: false
+    hostname: "keycloak.services.msk1.infra01.stage.cloud.reg.ru"
+    strict: false
+  http:
+    httpEnabled: true
+  ingress:
+    enabled: false
+  instances: 1
+  proxy:
+    headers: xforwarded
+  unsupported: 
+    podTemplate:
+      spec:
+        containers:
+        - name: keycloak
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+        securityContext:
+          fsGroup: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile:
+            type: RuntimeDefault
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakclient.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakClient
+metadata:
+  name: keycloak01-grafana-oauth
+spec:
+  realmRef:
+    name: keycloak01-regru
+    kind: KeycloakRealm
+  clientId: grafana-oauth
+  
+  clientRoles:
+  - admin
+  - viewer
+  defaultClientScopes:
+  - email
+  - offline_access
+  - profile
+  - roles
+  directAccess: true
+  fullScopeAllowed: true
+  implicitFlowEnabled: false
+  protocol: openid-connect
+  protocolMappers:
+  - config:
+      access.token.claim: "true"
+      claim.name: roles
+      full.path: "false"
+      id.token.claim: "true"
+      multivalued: "true"
+      userinfo.token.claim: "true"
+    name: client roles
+    protocol: openid-connect
+    protocolMapper: oidc-usermodel-client-role-mapper
+  public: false
+  redirectUris:
+  - https://grafana.services.msk1.infra01.stage.cloud.reg.ru/login/generic_oauth*
+  - https://grafana.client.services.msk1.infra01.stage.cloud.reg.ru/login/generic_oauth*
+  standardFlowEnabled: true
+  webUrl: https://grafana.services.msk1.infra01.stage.cloud.reg.ru
+  secret: $keycloak01-grafana-oauth-key:key
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakrealm.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealm
+metadata:
+  name: keycloak01-regru
+spec:
+  realmName: RegRu
+  keycloakRef:
+    name: keycloak01
+    kind: Keycloak
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakrealmgroup.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmGroup
+metadata:
+  name: keycloak01-devopshost
+spec:
+  name: devopshost
+  realmRef:
+    name: keycloak01-regru
+    kind: KeycloakRealm
+  
+  clientRoles:
+  - clientId: grafana-oauth
+    roles:
+    - viewer
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakrealmgroup.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmGroup
+metadata:
+  name: keycloak01-cloud-dev
+spec:
+  name: cloud-dev
+  realmRef:
+    name: keycloak01-regru
+    kind: KeycloakRealm
+  
+  clientRoles:
+  - clientId: grafana-oauth
+    roles:
+    - viewer
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakrealmgroup.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmGroup
+metadata:
+  name: keycloak01-cloud
+spec:
+  name: cloud
+  realmRef:
+    name: keycloak01-regru
+    kind: KeycloakRealm
+  
+  clientRoles:
+  - clientId: grafana-oauth
+    roles:
+    - admin
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakrealmrole.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmRole
+metadata:
+  name: keycloak01-viewer
+spec:
+  description: viewer
+  name: viewer
+  realmRef:
+    name: keycloak01-regru
+    kind: KeycloakRealm
+---
+# Source: keycloak-operator/charts/keycloak-configure/templates/configurations/keycloakrealmrole.yaml
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmRole
+metadata:
+  name: keycloak01-admin
+spec:
+  description: admin
+  name: admin
+  realmRef:
+    name: keycloak01-regru
+    kind: KeycloakRealm
+---
+# Source: keycloak-operator/charts/cluster/templates/pooler.yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: keycloak01-pgdb01-cluster-pooler-rw
+spec:
+  cluster:
+    name: keycloak01-pgdb01-cluster
+  instances: 3
+  type: rw
+  pgbouncer:
+    poolMode: session
+    parameters:
+      default_pool_size: "25"
+      max_client_conn: "1000"
+  monitoring:
+    enablePodMonitor: false
+
+NOTES:
+- The Operator has been deployed, view the logs by running this command:
+  kubectl --namespace keycloak logs deployment/keycloak01-stack-keycloak-operator-operator
+- A Keycloak instance has been deployed, connect to it at "keycloak.services.msk1.infra01.stage.cloud.reg.ru"

@@ -1,0 +1,95 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak-stack
+  namespace: keycloak-stack
+spec:
+  values:
+    keycloak-configure:
+      keycloak:
+        realms:
+          - name: realm01
+            realmName: realm01
+        realmGroups:
+          - name: admin
+            realmName: realm01
+            additionalSpec:
+              clientRoles:
+                - clientId: vault-oauth
+                  roles:
+                    - admin
+          - name: realm01
+            realmName: realm01
+            additionalSpec:
+              clientRoles:
+                - clientId: realm-management
+                  roles:
+                    - realm-admin
+        realmRoles:
+          - name: viewer
+            realmName: realm01
+            description: viewer
+          - name: admin
+            realmName: realm01
+            description: admin
+        clients:
+          - name: vault-oauth
+            genSecret: true
+            realmName: keycloak-realm01
+            copySecretNamespaces:
+              - vault
+            clientId: vault-oauth
+            additionalSpec:
+              protocol: openid-connect
+              public: false
+              redirectUris:
+                - https://*
+                - http://*
+              webOrigins:
+                - https://*
+                - http://*
+              implicitFlowEnabled: false
+              directAccess: true
+              standardFlowEnabled: true
+              fullScopeAllowed: true
+              clientRoles:
+                - admin
+                - viewer
+              defaultClientScopes:
+                - email
+                - offline_access
+                - profile
+                - roles
+              protocolMappers:
+                - name: client groups
+                  protocol: openid-connect
+                  protocolMapper: oidc-group-membership-mapper
+                  config:
+                    access.token.claim: "true"
+                    multivalued: "true"
+                    claim.name: groups
+                    full.path: "false"
+                    id.token.claim: "true"
+                    userinfo.token.claim: "true"
+                - name: client roles
+                  protocol: openid-connect
+                  protocolMapper: oidc-usermodel-client-role-mapper
+                  config:
+                    access.token.claim: "true"
+                    usermodel.clientRoleMapping.clientId: "vault-oauth"
+                    multivalued: "true"
+                    claim.name: roles
+                    full.path: "false"
+                    id.token.claim: "true"
+                    userinfo.token.claim: "true"
+    keycloak-operator:
+      keycloak:
+        ingress:
+          enabled: true
+          external:
+            enabled: false
+            annotations: {}
+            className: "cilium"
+            hosts:
+              - host: keycloak.localhost

@@ -1,0 +1,57 @@
+{{- if .Values.keycloak.clients }}
+{{- $fullName := .Values.keycloak.name | default (include "keycloak-operator.fullname" .) -}}
+{{ range .Values.keycloak.clients }}
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakClient
+metadata:
+  name: {{ $fullName }}-{{ .name }}
+spec:
+  realmRef:
+    name: {{ .realmName }}
+    kind: KeycloakRealm
+  clientId: {{ .clientId }}
+  {{ if .additionalSpec }}
+  {{- toYaml .additionalSpec | nindent 2 }}
+  {{- end }}
+  secret: ${{ $fullName }}-{{ .name }}-key:key
+{{- end }}
+
+{{ range $sec := .Values.keycloak.clients }}
+{{ if .genSecret }}
+---
+{{- $secret_name := printf "%s-%s-key" $fullName .name -}}
+{{- $password := printf "%s" (randAlphaNum 20 | b64enc)}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secret_name }}
+data:
+  {{- $old_sec := lookup "v1" "Secret" $.Release.Namespace $secret_name }}
+  {{- if or (not $old_sec) (not $old_sec.data) }}
+  key: {{ $password }}
+  {{ else }}
+  key: {{ index $old_sec.data "key" }}
+  {{- end }}
+
+{{ if .copySecretNamespaces }}
+{{ range .copySecretNamespaces }}
+---
+{{- $secret_name := printf "%s-%s-key" $fullName $sec.name -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secret_name }}
+  namespace: {{ . }}
+data:
+  {{- $old_sec := lookup "v1" "Secret" $.Release.Namespace $secret_name }}
+  {{- if or (not $old_sec) (not $old_sec.data) }}
+  key: {{ $password }}
+  {{ else }}
+  key: {{ index $old_sec.data "key" }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

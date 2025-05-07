@@ -9,6 +9,7 @@ spec:
   dnsNames:
     - {{ include "vault.fullname" . }}
     - {{ include "vault.fullname" . }}.localhost
+    - {{ include "vault.fullname" . }}.kind
     - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}
     - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}.svc
     - {{ include "vault.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local

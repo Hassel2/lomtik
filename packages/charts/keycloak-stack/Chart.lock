@@ -1,0 +1,15 @@
+dependencies:
+- name: keycloak-operator
+  repository: http://mirror-c8.hd.reg.ru/charts
+  version: 1.3.4
+- name: keycloak-configure
+  repository: http://mirror-c8.hd.reg.ru/charts
+  version: 0.1.1
+- name: keycloak-operator-configurator
+  repository: http://mirror-c8.hd.reg.ru/charts
+  version: 1.22.1
+- name: cluster
+  repository: http://mirror-c8.hd.reg.ru/charts
+  version: 0.0.9
+digest: sha256:a0ecc826e0e20c3972723637c76b0c3257b36ef3fd64101275fabe1bc4aca771
+generated: "2024-08-27T11:04:18.987074068+03:00"
