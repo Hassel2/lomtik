@@ -30,11 +30,12 @@ spec:
   driftDetection:
     mode: enabled
   values:
+    gitlabUrl: https://gitlab.kind/
     global:
       hosts:
-        domain: localhost
-        gitlab:
-          hostnameOverride: gitlab.localhost
+        domain: kind
+        # gitlab:
+          # hostnameOverride: gitlab.kind
       ingress:
         enabled: true
         configureCertmanager: false
@@ -68,6 +69,26 @@ spec:
     certmanager-issuer:
       email: email@example.com
     gitlab-runner:
+      # gitlabUrl: https://gitlab.kind/
+      runners:
+        config: |
+          [[runners]]
+            url = "https://gitlab.kind"
+            clone_url = "https://gitlab.kind"
+            environment = ["GIT_SSL_NO_VERIFY=true"]
+            [runners.kubernetes]
+            image = "ubuntu:22.04"
+              [[runners.kubernetes.host_aliases]]
+                "ip" = "172.18.0.6"
+                "hostnames" = ["gitlab.kind"]
+              [[runners.kubernetes.host_aliases]]
+                "ip" = "172.18.0.6"
+                "hostnames" = ["vault.kind"]
+            [[runners.kubernetes.volumes.secret]]
+              name = "gitlab-wildcard-tls-ca"
+              mount_path = "/etc/gitlab-runner/certs/"
+              read_only = true
+
       install: true
       volumes:
         - name: gitlab-wildcard-tls-ca
@@ -79,19 +100,12 @@ spec:
           name: gitlab-wildcard-tls-ca
           subPath: cfssl_ca
       hostAliases:
-      - ip: "172.18.0.8"
-        hostnames:
-        - "gitlab.localhost"
-      - ip: "172.18.0.7"
-        hostnames:
-        - "gitlab.localhost"
       - ip: "172.18.0.6"
         hostnames:
-        - "gitlab.localhost"
-      - ip: "172.18.0.5"
+        - "gitlab.kind"
+      - ip: "172.18.0.6"
         hostnames:
-        - "gitlab.localhost"
-        
+        - "vault.kind"
     prometheus:
       install: false
     redis:
@@ -101,5 +115,13 @@ spec:
         enabled: false
       gitlab-shell:
         enabled: false
+      webservice:
+        minReplicas: 1
+        workerProcesses: 1
+        puma:
+          threads:
+            min: 1
+            max: 1
+          workerMaxMemory: 1024 # in MB units
     registry:
       enabled: false
