@@ -2,7 +2,7 @@ apiVersion: v2
 name: vault
 description: Vault helm chart based on bank-vaults vault operator
 type: application
-version: 0.1.1
+version: 0.1.9
 appVersion: "1.19.0"
 maintainers:
   - name: 71g3pf4c3

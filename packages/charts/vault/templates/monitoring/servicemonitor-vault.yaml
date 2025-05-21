@@ -1,0 +1,41 @@
+{{- if .Values.vault.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "vault.fullname" . }}
+  {{- with .Values.vault.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ include "vault.fullname" . }}
+spec:
+  endpoints:
+  - interval: 30s
+    params:
+      format:
+      - prometheus
+    path: /v1/sys/metrics
+    port: api-port
+    scheme: https
+    tlsConfig:
+      ca: {}
+      cert: {}
+      insecureSkipVerify: true
+    relabelings:
+    - action: replace
+      targetLabel: job
+      replacement: vault
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+         - {{ include "vault.fullname" . }}
+      - key: vault_cr
+        operator: In
+        values:
+         - {{ include "vault.fullname" . }}
+      - key: global_service
+        operator: DoesNotExist
+{{- end }}

@@ -1,0 +1,88 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-restore-full
+  namespace: vault
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccount: vault
+      serviceAccountName: vault
+      volumes:
+      - emptyDir: {}
+        name: vault-raft
+      - name: restic
+        secret:
+          defaultMode: 420
+          secretName: restic
+      - name: vault-tls
+        secret:
+          defaultMode: 420
+          items:
+          - key: ca.crt
+            path: ca.crt
+          - key: tls.crt
+            path: server.crt
+          - key: tls.key
+            path: server.key
+          secretName: vault-tls
+      initContainers:
+      - name: restic
+        image: restic/restic:0.18.0
+        env:
+        - name: RESTIC_REPOSITORY
+          valueFrom:
+            secretKeyRef:
+              key: RESTIC_REPOSITORY
+              name: restic
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: restic
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: restic
+              key: AWS_SECRET_ACCESS_KEY
+        - name: RESTIC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: restic
+              key: RESTIC_PASSWORD
+        volumeMounts:
+        - mountPath: /vault/file
+          name: vault-raft
+        command:
+         - /bin/sh
+        args:
+          - -exc
+          - |
+            set -x
+            restic restore latest --target /
+            chown -R 100:100 /vault/file/
+      containers:
+      - name: vault
+        image: hashicorp/vault:1.19.0
+        env:
+        - name: VAULT_CACERT 
+          value: /vault/tls/ca.crt
+        - name: VAULT_ADDR 
+          value: https://vault:8200
+        command:
+          - /bin/sh
+        args:
+          - -exc
+          - |
+            set -x
+            VAULT_TOKEN=$(vault write -field=token auth/kubernetes/login role=backup jwt=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token))
+            vault login $VAULT_TOKEN       
+            vault operator raft snapshot restore -force /vault/file/backup.snapshot
+        volumeMounts:
+          - mountPath: /vault/tls
+            name: vault-tls
+          - mountPath: /vault/file
+            name: vault-raft

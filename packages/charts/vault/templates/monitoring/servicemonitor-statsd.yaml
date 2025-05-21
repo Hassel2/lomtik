@@ -1,0 +1,23 @@
+{{- if .Values.statsd.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "vault.fullname" . }}-statsd
+  {{- with .Values.statsd.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ include "vault.fullname" . }}-statsd
+spec:
+  endpoints:
+  - interval: 30s
+    path: /metrics
+    port: statsd
+    scheme: http
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "vault.fullname" . }}
+      global_service: "true"
+      vault_cr: {{ include "vault.fullname" . }}
+{{- end }}

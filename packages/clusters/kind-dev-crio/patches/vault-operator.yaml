@@ -2,20 +2,16 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: gitlab-operator
-  namespace: gitlab-operator
+  name: vault-operator
+  namespace: vault-operator
 spec:
   interval: 10m
   timeout: 5m
-  chart:
-    spec:
-      chart: gitlab-operator
-      version: 1.12.1
-      sourceRef:
-        kind: HelmRepository
-        name: gitlab-operator
-      interval: 5m
-  releaseName: gitlab-operator
+  chartRef:
+    kind: OCIRepository
+    name: vault-operator
+    namespace: vault-operator
+  releaseName: vault-operator
   install:
     createNamespace: true
     remediation:
@@ -30,4 +26,6 @@ spec:
   driftDetection:
     mode: enabled
   values:
-    watchCluster: true
+    monitoring:
+      serviceMonitor:
+        enabled: true

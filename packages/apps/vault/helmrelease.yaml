@@ -59,21 +59,28 @@ spec:
             - "ALL"
       service:
         type: ClusterIP
-        ports: []
+        # ports:
+        #   ingress-port: 8202
+        #   api-port: 8200
+        #   cluster-port: 8201
+      # podSpec:
+      #   ports:
+
       ingress:
-        enabled: true
+        enabled: false
         className: "cilium"
         annotations:
-          ingress.cilium.io/tls-passthrough: enabled 
+          # ingress.cilium.io/tls-passthrough: enabled 
+        # port: "8202"
         hosts:
           - host: vault.kind
             paths:
               - path: /
                 pathType: Prefix
-        tls:
-        - hosts:
-          - vault.kind
-          secretName: vault-tls
+        # tls:
+        # - hosts:
+        #   - vault.kind
+        #   secretName: vault-tls
       resources:
         limits:
           memory: "512Mi"
@@ -141,10 +148,14 @@ spec:
           raft:
             path: "/vault/file"
         listener:
-          tcp:
-            address: "[::]:8200"
+        # - tcp:
+        #     address: '[::]:8202'
+        #     tls_disable: true
+        - tcp:
+            address: '[::]:8200'
             tls_cert_file: /vault/tls/server.crt
             tls_key_file: /vault/tls/server.key
+
         api_addr: https://vault.default:8200
         cluster_addr: "https://${.Env.POD_NAME}:8201"
         disable_mlock: true
@@ -216,8 +227,8 @@ spec:
     monitoring:
       enabled: false
     statsd:
-      enabled: false
+      enabled: true
     velero:
-      enabled: false
+      enabled: true
     hsmDaemon: {}
     prometheusExporter: {}

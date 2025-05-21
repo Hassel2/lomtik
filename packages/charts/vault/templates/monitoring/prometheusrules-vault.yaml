@@ -1,0 +1,69 @@
+{{- if .Values.vault.alertRules.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "vault.fullname" . }}
+  {{- with .Values.vault.alertRules.labels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ include "vault.fullname" . }}
+spec:
+  groups:
+  - name: vault
+    rules:
+    - alert: VaultSealed
+      annotations:
+        summary: Vault Sealed
+        description: "Vault instance is sealed"
+        details: "{% raw %}cluster {{`{{`}} $labels.cluster {{`}}`}}{% endraw %}"
+      expr: vault_core_unsealed == 0
+      for: 1m
+      labels:
+        severity: warning
+        responsible: cloudsre
+        sort_by_value: ascending
+        send_to_automata: "false"
+        send_to_jira: "false"
+        send_to_duty_chats: "false"
+    - alert: VaultTooManyPendingTokens
+      expr: avg(vault_token_create_count - vault_token_store_count) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Vault Too Many Pending Tokens
+        description: "Too many pending tokens"
+        details: "{% raw %}cluster {{`{{`}} $labels.cluster {{`}}`}}{% endraw %}"
+        value: "{% raw %}{{`{{`}} $value {{`}}`}}{% endraw %}"
+    - alert: VaultTooManyInfinityTokens
+      expr: vault_token_count_by_ttl{creation_ttl="+Inf"} > 3
+      for: 5m
+      labels:
+        severity: warning
+        responsible: cloudsre
+        sort_by_value: ascending
+        send_to_automata: "false"
+        send_to_jira: "false"
+        send_to_duty_chats: "false"
+      annotations:
+        summary: Vault Too Many Infinity Tokens
+        description: "Too many infinity tokens"
+        details: "{% raw %}cluster {{`{{`}} $labels.cluster {{`}}`}}{% endraw %}"
+        value: "{% raw %}{{`{{`}} $value {{`}}`}}{% endraw %}"
+    - alert: VaultClusterHealth
+      expr: sum(vault_core_active) / count(vault_core_active) <= 0.3
+      for: 1m
+      labels:
+        severity: critical
+        responsible: cloudsre
+        sort_by_value: ascending
+        send_to_automata: "false"
+        send_to_jira: "false"
+        send_to_duty_chats: "false"
+      annotations:
+        summary: Vault Cluster Not Healty
+        description: "Vault cluster is not healthy"
+        details: "{% raw %}cluster {{`{{`}} $labels.cluster {{`}}`}}{% endraw %}"
+{{- end }}

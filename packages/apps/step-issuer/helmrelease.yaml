@@ -1,0 +1,60 @@
+# step-issuer чарт требуется для получения сертификатов smallstep jwk. 
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: step-issuer
+  namespace: step-issuer
+spec:
+  interval: 10m
+  timeout: 5m
+  chart:
+    spec:
+      chart: step-issuer
+      version: 1.9.8
+      sourceRef:
+        kind: HelmRepository
+        name: smallstep
+      interval: 5m
+  releaseName: step-issuer
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  test:
+    enable: true
+  driftDetection:
+    mode: enabled
+  values:
+    kubeRBACproxy:
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    stepIssuer:
+      create: false
+      caUrl: ""
+      caBundle: ""
+      provisioner:
+        name: ""
+        kid: ""
+        passwordRef:
+          name: ""
+          key: ""

@@ -1,0 +1,9 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: smallstep
+  namespace: step-issuer
+spec:
+  interval: 5m
+  url: https://smallstep.github.io/helm-charts

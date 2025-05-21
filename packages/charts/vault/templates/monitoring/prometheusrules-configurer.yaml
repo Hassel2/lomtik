@@ -1,0 +1,30 @@
+{{- if .Values.vault.alertRules.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "vault.fullname" . }}
+  {{- with .Values.configurer.alertRules.labels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ include "vault.fullname" . }}-configurer
+spec:
+  groups:
+  - name: vault-configurer
+    rules:
+    - alert: VaultConfigFailed
+      annotations:
+        summary: Vault Config Failed
+        description: "Vault config failed"
+        details: "{% raw %}cluster {{`{{`}} $labels.cluster {{`}}`}}{% endraw %}"
+      expr: vault_config_failed > 0
+      for: 20m
+      labels:
+        severity: warning
+        responsible: cloudsre
+        sort_by_value: ascending
+        send_to_automata: "false"
+        send_to_jira: "false"
+        send_to_duty_chats: "false"
+{{- end }}

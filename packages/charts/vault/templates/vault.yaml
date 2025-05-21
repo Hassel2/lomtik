@@ -81,7 +81,7 @@ spec:
                   service:
                     name: {{ include "vault.fullname" $ }}
                     port:
-                      number: {{ default 8200 }}
+                      number: {{ $.Values.vault.ingress.port | default 8200 }}
               {{- end }}
         {{- end }}
       {{- if .Values.vault.ingress.tls }}
@@ -128,7 +128,7 @@ spec:
     hsmDaemon:
       {{- toYaml . | nindent 6 }}
     {{- end }}
-    {{- with .Values.prometheusExporter.resources }}
+    {{- with .Values.statsd.resources }}
     prometheusExporter:
       {{- toYaml . | nindent 6 }}
     {{- end }}
@@ -141,10 +141,8 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   serviceAccount: {{ include "vault.serviceAccountName" . }}
-  {{- if .Values.monitoring.enabled }}
-  {{- with .Values.monitoring.serviceMonitor}}
+  {{- with .Values.vault.operatorServiceMonitor}}
   serviceMonitorEnabled: {{ . }}
-  {{- end }}
   {{- end }}
   {{- with .Values.vault.service.ports }}
   servicePorts:
@@ -161,8 +159,13 @@ spec:
   size: {{ .Values.vault.size }}
   {{- if .Values.statsd.enabled }}
   statsdDisabled: false
-  statsdConfig: {{ .Values.statsd.config }}
-  statsdImage: {{ .Values.statsd.image }}
+  {{- with .Values.statsd.config }}
+  statsdConfig: | 
+    {{ toYaml . | nindent 4 }}
+  {{- end }}
+  {{ with .Values.statsd.image }}
+  statsdImage: {{ . }}
+  {{- end }}
   {{- else }}
   statsdDisabled: true
   {{- end }}
@@ -233,7 +236,9 @@ spec:
   {{- end }}
   {{- if .Values.velero.enabled }}
   veleroEnabled: true
-  veleroFsfreezeImage: "{{ .Values.velero.image.repository }}:{{ .Values.velero.image.tag | default .Chart.AppVersion }}"
+  {{- with .Values.velero.image }}
+  veleroFsfreezeImage: "{{ .repository }}:{{ .tag | default $.Chart.AppVersion }}"
+  {{- end }}
   {{- end }}
   {{- with .Values.vault.volumeClaimTemplates }}
   volumeClaimTemplates:

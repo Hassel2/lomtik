@@ -7,5 +7,6 @@ resources:
   - ../../apps/cilium
   - ../../apps/cloud-provider-kind
   - ../../apps/flux-instance
+  - ../../apps/flux-operator
 # patches:
 #   - path: kind-test.yaml

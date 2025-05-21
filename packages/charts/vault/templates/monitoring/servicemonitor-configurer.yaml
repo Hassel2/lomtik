@@ -1,0 +1,22 @@
+{{- if .Values.configurer.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "vault.fullname" . }}-configurer
+  {{- with .Values.configurer.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ include "vault.fullname" . }}-configurer
+spec:
+  endpoints:
+  - interval: 30s
+    path: /metrics
+    port: metrics
+    scheme: http
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "vault.fullname" . }}-configurator
+      vault_cr: {{ include "vault.fullname" . }}
+{{- end }}

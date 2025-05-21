@@ -5,16 +5,11 @@ metadata:
   name: grafana-operator
   namespace: grafana-operator
 spec:
-  dependsOn:
-    - name: cert-manager
-  targetNamespace: grafana-operator
-  storageNamespace: grafana-operator
   interval: 10m
   timeout: 5m
   chartRef:
     kind: OCIRepository
     name: grafana-operator
-    namespace: default
   releaseName: grafana-operator
   install:
     createNamespace: true

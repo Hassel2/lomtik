@@ -36,20 +36,27 @@ vault:
   service:
     type: ClusterIP
     ports: []
+  serviceMonitor: 
+    labels: {}
+    enabled: false
+  alertRules: 
+    labels: {}
+    enabled: false
+  operatorServiceMonitor: false
   ingress:
-    enabled: true
-    className: "cilium"
-    annotations:
-      ingress.cilium.io/tls-passthrough: enabled 
-    hosts:
-      - host: vault.localhost
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-    - hosts:
-      - vault.localhost
-      secretName: vault-tls
+    enabled: false
+    port: 8200
+    className: ""
+    annotations: {}
+    # hosts:
+    #   - host: vault.localhost
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+    # tls:
+    # - hosts:
+    #   - vault.localhost
+    #   secretName: vault-tls
   resources:
     limits:
       memory: "512Mi"
@@ -137,6 +144,14 @@ vault:
           path "shared/*" {
             capabilities = ["create", "read", "update", "delete", "list"]
           }
+      - name: allow_backups
+        rules: |
+          path "/sys/storage/raft/snapshot" {
+            capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+          }
+          path "/sys/storage/raft/snapshot-force" {
+            capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+          }
     auth:
       - type: kubernetes
         roles:
@@ -145,6 +160,16 @@ vault:
             bound_service_account_names: ["default"]
             bound_service_account_namespaces: ["*"]
             policies: ["allow_shared_secrets", "allow_namespaced_secrets"]
+            ttl: 1h
+          - name: monitoring
+            bound_service_account_names: ["default"]
+            bound_service_account_namespaces: ["*"]
+            policies: ["allow_metrics"]
+            ttl: 1h
+          - name: backup
+            bound_service_account_names: ["vault"]
+            bound_service_account_namespaces: ["vault"]
+            policies: ["allow_backups"]
             ttl: 1h
     secrets:
       - path: namespaces
@@ -164,7 +189,13 @@ vault:
           data:
             username: testuser
             password: testpassword
-configurer: {}
+configurer:
+  serviceMonitor:
+    labels: {}
+    enabled: false
+  alertRules: 
+    labels: {}
+    enabled: false
 bankVaults:
   image:
     repository: ghcr.io/banzaicloud/bank-vaults
@@ -177,13 +208,37 @@ bankVaults:
     requests:
       memory: "256Mi"
       cpu: "100m"
+  serviceMonitor:
+    labels: {}
+    enabled: false
 fluentd:
-  enabled: false
-monitoring:
   enabled: false
 statsd:
   enabled: false
+  serviceMonitor:
+    labels: {}
+    enabled: false
+  image: 'prom/statsd-exporter:latest'
+  resources: {}
+  config:
+    mappings:
+      - match: vault.route.*.*
+        name: "vault_route"
+        labels:
+          method: "$1"
+          path: "$2"
 velero:
   enabled: false
+backups:
+  enabled: false
+  cronjob:
+    schedule: "* * * * *"
+    backoffLimit: 3
+    restartPolicy: OnFailure
+  restic:
+    # Must contain RESTIC_PASSWORD RESTIC_REPOSITORY AWS_SECRET_ACCESS_KEY AWS_ACCESS_KEY_ID
+    secretRef: vault-restic
+    image:
+      repository: restic/restic
+      tag: 0.18.0
 hsmDaemon: {}
-prometheusExporter: {}

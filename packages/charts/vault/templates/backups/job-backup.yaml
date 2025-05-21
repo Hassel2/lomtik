@@ -1,0 +1,97 @@
+{{- if .Values.backups.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "vault.fullname" . }}-backup
+spec:
+  schedule: {{ .Values.backups.cronjob.schedule | quote }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backups.cronjob.backoffLimit }}
+      template:
+        spec:
+          restartPolicy: {{ .Values.backups.cronjob.restartPolicy }}
+          serviceAccount: {{ include "vault.serviceAccountName" . }}
+          serviceAccountName: {{ include "vault.serviceAccountName" . }}
+          volumes:
+          - name: backup-volume
+            emptyDir: {}
+          - name: vault-tls
+            secret:
+              defaultMode: 420
+              items:
+              - key: ca.crt
+                path: ca.crt
+              - key: tls.crt
+                path: server.crt
+              - key: tls.key
+                path: server.key
+              {{- if .Values.vault.tls.certManager.enabled }}
+              secretName: {{ include "vault.fullname" . }}-tls
+              {{- end }}
+              {{- with .Values.vault.tls.existingSecret }}
+              secretName: {{ .Values.vault.tls.existingSecret }}
+              {{- end }}
+          initContainers:
+          - name: vault
+            image: "{{ .Values.vault.image.repository }}:{{ .Values.vault.image.tag | default .Chart.AppVersion }}"
+            env:
+            - name: VAULT_CACERT 
+              value: /vault/tls/ca.crt
+            - name: VAULT_ADDR 
+              value: https://{{ include "vault.fullname" . }}:8200
+            command:
+             - /bin/sh
+            args:
+             - -exc
+             - |
+               set -x
+               VAULT_TOKEN=$(vault write -field=token auth/kubernetes/login role=backup jwt=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token))
+               vault login $VAULT_TOKEN
+               vault operator raft snapshot save /vault/file/backup.snapshot
+            volumeMounts:
+              - mountPath: /vault/tls
+                name: vault-tls
+              - mountPath: /vault/file
+                name: backup-volume
+          containers:
+          - name: restic
+            image: "{{ .Values.backups.restic.image.repository }}:{{ .Values.backups.restic.image.tag | default .Chart.AppVersion }}"
+            env:
+            - name: VAULT_CACERT 
+              value: /vault/tls/ca.crt
+            - name: VAULT_ADDR 
+              value: https://{{ include "vault.fullname" . }}:8200
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backups.restic.secretRef }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backups.restic.secretRef }}
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RESTIC_REPOSITORY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backups.restic.secretRef }}
+                  key: RESTIC_REPOSITORY
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backups.restic.secretRef }}
+                  key: RESTIC_PASSWORD
+            volumeMounts:
+              - mountPath: /vault/file/
+                name: backup-volume
+            command:
+             - /bin/sh
+            args:
+             - -exc
+             - |
+               set -x
+               restic init || true
+               restic backup /vault/file/backup.snapshot
+{{- end }}

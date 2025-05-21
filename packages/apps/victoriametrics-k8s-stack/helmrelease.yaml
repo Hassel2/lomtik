@@ -3,12 +3,8 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: victoria-metrics-k8s-stack
-  namespace: default
+  namespace: victoriametrics
 spec:
-  dependsOn:
-    - name: cilium
-  targetNamespace: victoriametrics
-  storageNamespace: victoriametrics
   interval: 10m
   timeout: 5m
   chart:
@@ -92,6 +88,9 @@ spec:
       enabled: true
     vmagent:
       enabled: true
+      spec:
+        externalLabels:
+          datacenter: kind
     prometheus-node-exporter:
       enabled: false
     kube-state-metrics:

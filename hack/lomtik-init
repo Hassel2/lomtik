@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-TYPE=${1:-bare}
+TYPE=${1:-base}
 CLUSTERPATH=${2:-'clusters'}
 
 case "$TYPE" in
@@ -19,10 +19,29 @@ case "$TYPE" in
 		;;
 esac
 
-
 case "$TYPE" in
-	dev*)
+	"dev-crio")
   		# if [ ! -z $(helm list -n kube-system | grep cilium)]; then
+			echo $TYPE
+			helm repo add cilium https://helm.cilium.io/ --force-update
+			helm upgrade --install cilium cilium/cilium --version 1.17.2 --namespace kube-system --values clusters/kind/configs/cilium-values.yaml
+			helm upgrade --install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
+				--namespace flux-system \
+				--create-namespace \
+				--set multitenancy.enabled=true \
+				--wait
+			kubectl apply -k ./packages/apps/flux-instance
+			kubectl -n flux-system wait resourceset/zot --for=condition=Ready --timeout=20m
+			kubectl -n zot wait helmrelease/zot --for=condition=Ready --timeout=20m
+			kubectl -n zot wait deployment/zot --for=condition=Available --timeout=20m
+			bash ./hack/lomtik-push
+			kubectl -n flux-system wait fluxinstance/flux --for=condition=Ready --timeout=20m
+			# fi
+			kubectl apply -k ./packages/$CLUSTERPATH/kind-"$TYPE"
+		;;
+	"dev")
+  		# if [ ! -z $(helm list -n kube-system | grep cilium)]; then
+			echo $TYPE
 			helm repo add cilium https://helm.cilium.io/ --force-update
 			helm upgrade --install cilium cilium/cilium --version 1.17.2 --namespace kube-system --values clusters/kind/configs/cilium-values.yaml
 			helm upgrade --install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
