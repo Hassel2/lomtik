@@ -111,14 +111,9 @@ spec:
         #   - "gitlab.kind"
       externalConfig:
         policies:
-          - name: allow_namespaced_secrets
+          - name: allow_kubernetes_namespaced_secrets
             rules: |
-              path "namespaces/data/{{identity.entity.aliases.${ accessor `kubernetes/` }.metadata.service_account_namespace}}/*" {
-                capabilities = ["create", "read", "update", "delete", "list"]
-              }
-          - name: allow_namespaced_secrets
-            rules: |
-              path "namespaces/data/{{identity.entity.aliases.${ accessor `kubernetes/` }.metadata.service_account_namespace}}/*" {
+              path "kubernetes/data/{{identity.entity.aliases.${ accessor `kubernetes/` }.metadata.service_account_namespace}}/*" {
                 capabilities = ["create", "read", "update", "delete", "list"]
               }
           - name: allow_shared_secrets
@@ -135,6 +130,23 @@ spec:
             rules: |
               path "*" {
                 capabilities = ["read", "update", "list"]
+              }
+          - name: allow_configurer
+            rules: |
+              path "/sys/policies/*" {
+                capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+              }
+
+              path "/sys/policy/*" {
+                capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+              }
+
+              path "/identity/*" {
+                capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+              }
+
+              path "auth/token/create" {
+                capabilities = ["create", "update", "sudo"]
               }
           - name: allow_metrics
             rules: |
@@ -230,7 +242,7 @@ spec:
     velero:
       enabled: false
     backups:
-      enabled: true
+      enabled: false
       cronjob: 
         schedule: "* * * * *" 
         backoffLimit: 3

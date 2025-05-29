@@ -5,8 +5,6 @@ metadata:
   name: cloudnative-pg
   namespace: default
 spec:
-  dependsOn:
-    - name: cilium
   targetNamespace: cloudnative-pg
   storageNamespace: cloudnative-pg
   interval: 10m

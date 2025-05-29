@@ -4,18 +4,19 @@ kind: Kustomization
 resources:
   - ../../bundles/base
   - ../../apps/cloudnative-pg
+  - ../../apps/cert-manager
   # - ../../apps/keycloak-stack
   - ../../apps/vault-secrets-operator
   - ../../apps/victoriametrics-k8s-stack
   - ../../apps/grafana-operator
   - ../../apps/vault-operator
   - ../../apps/vault
-  - ../../apps/velero
+  # - ../../apps/velero
   # - ../../apps/step-issuer
 patches:
   - path: patches.yaml
   - path: ./patches/vault.yaml
   - path: ./patches/vault-operator.yaml
   - path: ./patches/vault-secrets-operator.yaml
-  - path: ./patches/velero.yaml
+  # - path: ./patches/velero.yaml
   # - path: ./patches/keycloak-stack.yaml
