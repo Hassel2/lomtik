@@ -1,0 +1,74 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: minio-tenant
+  namespace: minio-tenant
+spec:
+  releaseName: minio-tenant
+  chart:
+    spec:
+      chart: tenant
+      sourceRef:
+        kind: HelmRepository
+        name: minio-tenant
+        namespace: minio-tenant
+  interval: 15m
+  timeout: 15m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    tenant:
+      name: minio-tenant
+      image:
+        repository: quay.io/minio/minio
+        tag: RELEASE.2025-04-08T15-41-24Z
+        pullPolicy: IfNotPresent
+      configSecret:
+        name: myminio-env-configuration
+        accessKey: minio
+        secretKey: minio123
+      pools:
+        - servers: 3
+          name: pool-0
+          volumesPerServer: 1
+          size: 10Gi
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: "OnRootMismatch"
+            runAsNonRoot: true
+          containerSecurityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          topologySpreadConstraints: [ ]
+    ingress:
+      api:
+        enabled: true
+        ingressClassName: ""
+        labels: { }
+        annotations: { }
+        tls: [ ]
+        host: minio.local
+        path: /
+        pathType: Prefix
+      console:
+        enabled: true
+        ingressClassName: ""
+        labels: { }
+        annotations: { }
+        tls: [ ]
+        host: minio-console.local
+        path: /
+        pathType: Prefix

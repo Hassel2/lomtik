@@ -1,7 +1,7 @@
 
 .PHONY: update
 
-bootstrap: init push-charts push
+bootstrap: init push push-charts
 
 init:
 	bash ./hack/lomtik-init $(type)
