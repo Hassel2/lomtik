@@ -26,8 +26,6 @@ nodes:
                 readOnly: false
                 pathType: DirectoryOrCreate
             extraArgs:
-              admission-control-config-file: /etc/kubernetes/admission/admission.yaml
-              enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook    
               audit-log-path: /var/log/kubernetes/kube-apiserver-audit.log
               audit-policy-file: /etc/kubernetes/policies/audit-policy.yaml
     extraMounts:
@@ -36,9 +34,6 @@ nodes:
         readOnly: true
       - hostPath: ./configs/audit/audit-policy.yaml
         containerPath: /etc/kubernetes/policies/audit-policy.yaml
-        readOnly: true
-      - hostPath: ./configs/admission/admission.yaml
-        containerPath: /etc/kubernetes/admission/admission.yaml
         readOnly: true
       - hostPath: /var/run/docker.sock
         containerPath: /var/run/docker.sock
