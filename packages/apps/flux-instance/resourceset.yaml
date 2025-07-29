@@ -73,6 +73,12 @@ spec:
                 "log": { "level": "debug" },
                 "distSpecVersion": "1.0.1",
                 "extensions": {
+                  "ui": {
+                    "enable": true
+                  },
+                  "search": {
+                    "enable": true
+                  },
                   "sync": {
                     "enable": true,
                     "registries": [
